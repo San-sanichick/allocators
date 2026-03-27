@@ -82,7 +82,6 @@ public:
         return ptr;
     }
 
-    // TODO: implement alignment
     template<typename T>
     constexpr inline T *const alloc(size_t elements)
     {
