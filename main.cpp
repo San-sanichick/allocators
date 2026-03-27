@@ -1,164 +1,198 @@
-#include <exception>
-#include <glm/fwd.hpp>
+#include <cstdint>
+#include <cstdlib>
+#include <format>
 #include <iostream>
-#include <optional>
-#include <fstream>
 #include <string>
-#include <cctype>
-#include <vector>
+#include "src/alloc.hpp"
+// #include "src/vector.hpp"
 
-#include <glm/vec2.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/string_cast.hpp>
-
-#include "vecrender_triangulator.h"
-#include <vecrender_path.h>
-
-
-
-struct Segment
+enum class Build
 {
-    Segment() = default;
-    Segment(const Segment&) = default;
-    Segment(Segment&&) = default;
+    Debug,
+    Release,
+};
 
-    char command;
-    glm::vec2 end;
-    std::optional<glm::vec2> c1;
-    std::optional<glm::vec2> c2;
+#if defined(NDEBUG)
+    constexpr Build BUILD = Build::Release;
+#else
+    constexpr Build BUILD = Build::Debug;
+#endif
+
+inline constexpr void LOG(std::string_view str)
+{
+    if constexpr (BUILD == Build::Debug)
+    {
+        std::cout << str << std::endl;
+    }
+}
+
+struct Point
+{
+    int x, y;
+
+    Point() = default;
+    Point(int x, int y) : x(x), y(y) {}
+    Point(const Point&) = default;
+    Point(Point&&) = default;
+    ~Point() = default;
+
+
+    int len()
+    {
+        return x * x + y * y;
+    }
+
+    inline constexpr std::string toString() const
+    {
+        return std::format("({}, {})", x, y);
+    }
+};
+
+
+template<typename T>
+class DynArray
+{
+public:
+    DynArray()
+        : _capacity(1)
+        , _size(0)
+        , _data(static_cast<T*>(std::malloc(sizeof(T) * _capacity)))
+    { }
+
+    void push(T&& el)
+    {
+        if (this->needsResize()) this->resize();
+
+        this->_data[this->_size] = std::move(el);
+        this->_size++;
+    }
+
+private:
+    bool needsResize()
+    {
+        return this->_size + 1 > this->_capacity;
+    }
+
+    void resize()
+    {
+        this->_capacity *= 1.8f;
+        this->_data = static_cast<T*>(std::realloc(this->_data, sizeof(T) * this->_capacity));
+    }
+
+private:
+    size_t _capacity;
+    size_t _size;
+    T* _data;
+};
+
+
+struct Foo
+{
+    int x, y;
 };
 
 
 int main()
 {
-    // std::ifstream file("path.txt");
-    // if (!file.is_open())
+    // stl::Arena arena(4096);
+    //
+    // for (size_t i = 0; i < 10; i++)
     // {
-    //     std::cerr << "No file" << std::endl;
-    //     return 1;
+    //     // NOTE: if use a defer macro here,
+    //     // we're good to go, as this is going to be
+    //     // freed at the end of the scope
+    //     defer ([&] { arena.freeAll(); });
+    //
+    //     Point *const p1 = arena.make<Point>(i, i + 1);
+    //     Point *const p2 = arena.make<Point>(i + 2, i + 3);
+    //
+    //     LOG(p1->toString());
+    //     LOG(p2->toString());
+    //
+    //     // NOTE: or just manually free it at the end
+    //     // arena.freeAll();
     // }
     //
-    // Segment* temp = nullptr;
-    // std::vector<Segment> segments;
-    // std::string word;
-    //
-    // std::vector<double> buffer;
-    // buffer.reserve(6);
-    //
-    // while (file >> word)
-    // {
-    //     if (word.length() == 1 && std::isalpha(word[0]))
-    //     {
-    //         if (temp != nullptr)
-    //         {
-    //             switch (temp->command)
-    //             {
-    //                 case 'M':
-    //                 case 'm':
-    //                     temp->end.x = buffer[0];
-    //                     temp->end.y = buffer[1];
-    //                     break;
-    //                 case 'L':
-    //                 case 'l':
-    //                     temp->end.x = buffer[0];
-    //                     temp->end.y = buffer[1];
-    //                     break;
-    //                 case 'C':
-    //                 case 'c':
-    //                     temp->end.x = buffer[0];
-    //                     temp->end.y = buffer[1];
-    //                     temp->c1 = glm::vec2(buffer[2], buffer[3]);
-    //                     temp->c2 = glm::vec2(buffer[4], buffer[5]);
-    //                     break;
-    //                 case 'Q':
-    //                 case 'q':
-    //                     temp->end.x = buffer[0];
-    //                     temp->end.y = buffer[1];
-    //                     temp->c1 = glm::vec2(buffer[2], buffer[3]);
-    //                     break;
-    //                 case 'Z':
-    //                     break;
-    //             }
-    //
-    //             segments.push_back(*temp);
-    //             buffer.clear();
-    //             delete temp;
-    //         }
-    //
-    //         temp = new Segment();
-    //         temp->command = word[0];
-    //         continue;
-    //     }
-    //
-    //     double num = std::stod(word);
-    //     buffer.push_back(num);
-    // }
-    // file.close();
-    //
-    // vecrender::Path path;
-    //
-    // for (const auto& seg : segments)
-    // {
-    //     switch (seg.command)
-    //     {
-    //         case 'M':
-    //         // case 'm':
-    //             path.moveTo(seg.end);
-    //             break;
-    //         case 'L':
-    //         // case 'l':
-    //             path.lineTo(seg.end);
-    //             break;
-    //         case 'C':
-    //         // case 'c':
-    //             path.cubicTo(seg.end, seg.c1.value(), seg.c2.value());
-    //             break;
-    //         case 'Q':
-    //         // case 'q':
-    //             path.quadraticTo(seg.end, seg.c1.value());
-    //             break;
-    //         case 'Z':
-    //             path.close();
-    //             break;
-    //     }
-    // }
+    // LOG("");
 
-    vecrender::Path path;
+    // NOTE: here we don't defer, as the data is going
+    // to be freed by the arenas destructor
 
-    path.moveTo({20, 20});
-    path.lineTo({100, 20});
-    path.lineTo({100, 100});
-    path.lineTo({20, 100});
-    path.close();
+    stl::Arena arena(4096);
 
-    vecrender::Triangulator triangulator(path);
-    const auto& vertices = triangulator.getVertices();
-    const auto count = triangulator.getNumVertices();
+    // NOTE: these allocations never call destructors.
+    // either call them manually, if needed,
+    // or, preferably, make sure these types don't have
+    // non-trivial destructors
+    Point *const p1 = arena.make_aligned<Point>(69, 420);
+    Point *const p2 = arena.make_aligned<Point>(420, 69);
 
-    std::ofstream out("vertices.json");
-    out << '[';
-    out << '[';
-    for (size_t i = 0; i < count; i++)
+    LOG(p1->toString());
+    LOG(p2->toString());
+
+
+    constexpr size_t SIZE = 32;
+    int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers
+
+    for (size_t i = 0; i < SIZE; i++)
     {
-        const auto& vertex = vertices[i];
-
-        std::cout
-            << glm::to_string(vertex.position)
-            << " | "
-            << glm::to_string(vertex.factors)
-            << std::endl;
-
-        out
-            << vertex.position.x << ','
-            << vertex.position.y << ','
-            << vertex.factors.x << ','
-            << vertex.factors.y << ','
-            << vertex.factors.z;
-
-        if (i < count - 1) out << ',';
+        arr[i] = i;
     }
-    out << "]," << count << ']' << std::endl;
-    out.close();
 
-    return 0;
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        LOG(std::to_string(arr[i]));
+    }
+
+    Point *const p3 = arena.make_aligned<Point>(32, 89);
+    LOG(p3->toString());
+
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        LOG(std::to_string(arr[i]));
+    }
+
+    LOG(p1->toString());
+
+    // stl::Vector<Point> v;
+    //
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     v.emplaceBack(i, i + 1);
+    // }
+    //
+    // v.popBack();
+    //
+    // LOG("push result");
+    //
+    // for (const auto& el : v)
+    // {
+    //     LOG(el.toString());
+    // }
+    //
+    // LOG("pop");
+    // for (size_t i = 0; i < 5; i++)
+    // {
+    //     auto& val = v[v.size() - 1];
+    //     LOG(val.toString());
+    //
+    //     v.popBack();
+    // }
+    //
+    // v.emplaceBack(69, 420);
+    //
+    // LOG("pop result and then a single push");
+    // for (const auto& el : v)
+    // {
+    //     LOG(el.toString());
+    // }
+    //
+    //
+    // LOG("copy");
+    // stl::Vector<Point> move = std::move(v);
+    //
+    // for (const auto& el : move)
+    // {
+    //     LOG(el.toString());
+    // }
 }
