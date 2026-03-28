@@ -43,14 +43,14 @@ public:
     {
         if (this->_top != this->_arena)
         {
-            this->freeAll();
+            this->free_all();
         }
 
         delete[] this->_arena;
     }
 
 public:
-    constexpr inline void freeAll()
+    constexpr inline void free_all()
     {
         this->_top = this->_arena;
     }
@@ -86,7 +86,7 @@ public:
     constexpr inline T *const alloc(size_t elements)
     {
         const size_t size = sizeof(T) * elements;
-        ASSERT((this->_top + size) > (std::byte*)this->_size, "Out of memory");
+        ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
         T *ptr = reinterpret_cast<T*>(this->_top);
         std::memset(ptr, 0, size);
@@ -104,7 +104,7 @@ public:
 
         uintptr_t offset = this->align_forward((uintptr_t)this->_top, alignment);
 
-        ASSERT(offset + size > this->_size, "Out of memory");
+        ASSERT(offset + size < (uintptr_t)(this->_arena + this->_size), "Out of memory");
 
         this->_top = reinterpret_cast<std::byte*>(offset);
         T *ptr = reinterpret_cast<T*>(this->_top);
@@ -119,7 +119,7 @@ public:
     constexpr inline T *const make(Args&&... args)
     {
         const size_t size = sizeof(T);
-        ASSERT((this->_top + size) > (std::byte*)this->_size, "Out of memory");
+        ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
         std::byte *ptr = this->_top;
         this->_top += size;
@@ -134,7 +134,7 @@ public:
         const size_t alignment = alignof(T);
         uintptr_t offset = this->align_forward((uintptr_t)this->_top, alignment);
 
-        ASSERT(offset + size > this->_size, "Out of memory");
+        ASSERT(offset + size < (uintptr_t)(this->_arena + this->_size), "Out of memory");
 
         this->_top = reinterpret_cast<std::byte*>(offset);
         std::byte *ptr = this->_top;
@@ -168,5 +168,76 @@ private:
     std::byte *_arena;
     std::byte *_top;
 };
+
+
+template<typename T>
+class Pool
+{
+public:
+    Pool(size_t size)
+        : _count(size)
+        , _pool(new std::byte[_count * _chunk_size])
+    {
+        this->free_all();
+    }
+
+    ~Pool()
+    {
+        delete[] this->_pool;
+    }
+
+
+    template<class ...Args>
+    T *const alloc(Args&&... args)
+    {
+        PoolNode *node = this->_head;
+
+        ASSERT(node != nullptr, "Out of memory");
+
+        this->_head = this->_head->next;
+
+        return new (node) T(std::forward<Args>(args)...);
+    }
+
+    void free(T *ptr)
+    {
+        if (ptr == nullptr) return;
+
+        std::byte *start = this->_pool;
+        std::byte *end = &this->_pool[this->_count * this->_chunk_size];
+
+        ASSERT((start <= (std::byte*)ptr && (std::byte*)ptr < end), "Pointer does not belong to this pool");
+
+        PoolNode *node = reinterpret_cast<PoolNode*>(ptr);
+        node->next = this->_head;
+        this->_head = node;
+    }
+
+    void free_all()
+    {
+        for (size_t i = 0; i < this->_count; i++)
+        {
+            std::byte *ptr = &this->_pool[i + this->_chunk_size];
+            PoolNode *node = reinterpret_cast<PoolNode*>(ptr);
+            node->next = this->_head;
+            this->_head = node;
+        }
+    }
+
+
+private:
+    struct PoolNode
+    {
+        PoolNode *next;
+    };
+
+private:
+    size_t _chunk_size = sizeof(T);
+    size_t _count;
+    std::byte *_pool;
+
+    PoolNode *_head = nullptr;
+};
+
 
 }

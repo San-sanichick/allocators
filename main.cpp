@@ -1,30 +1,9 @@
-#include <cstdint>
 #include <cstdlib>
 #include <format>
-#include <iostream>
 #include <string>
 #include "src/alloc.hpp"
 // #include "src/vector.hpp"
 
-enum class Build
-{
-    Debug,
-    Release,
-};
-
-#if defined(NDEBUG)
-    constexpr Build BUILD = Build::Release;
-#else
-    constexpr Build BUILD = Build::Debug;
-#endif
-
-inline constexpr void LOG(std::string_view str)
-{
-    if constexpr (BUILD == Build::Debug)
-    {
-        std::cout << str << std::endl;
-    }
-}
 
 struct Point
 {
@@ -86,9 +65,19 @@ private:
 };
 
 
-struct Foo
+
+struct FooA
 {
-    int x, y;
+    size_t a;
+    char b;
+    char c;
+};
+
+struct FooB
+{
+    char b;
+    size_t a;
+    char c;
 };
 
 
@@ -101,7 +90,7 @@ int main()
     //     // NOTE: if use a defer macro here,
     //     // we're good to go, as this is going to be
     //     // freed at the end of the scope
-    //     defer ([&] { arena.freeAll(); });
+    //     defer ([&] { arena.free_all(); });
     //
     //     Point *const p1 = arena.make<Point>(i, i + 1);
     //     Point *const p2 = arena.make<Point>(i + 2, i + 3);
@@ -112,47 +101,50 @@ int main()
     //     // NOTE: or just manually free it at the end
     //     // arena.freeAll();
     // }
+    // //
+    // // LOG("");
     //
-    // LOG("");
+    // // NOTE: here we don't defer, as the data is going
+    // // to be freed by the arenas destructor
+    //
+    // // NOTE: these allocations never call destructors.
+    // // either call them manually, if needed,
+    // // or, preferably, make sure these types don't have
+    // // non-trivial destructors
+    // Point *const p1 = arena.make_aligned<Point>(69, 420);
+    // Point *const p2 = arena.make_aligned<Point>(420, 69);
+    //
+    // LOG(p1->toString());
+    // LOG(p2->toString());
+    //
+    //
+    // constexpr size_t SIZE = 32;
+    // int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers
+    //
+    // for (size_t i = 0; i < SIZE; i++)
+    // {
+    //     arr[i] = i;
+    // }
+    //
+    // for (size_t i = 0; i < SIZE; i++)
+    // {
+    //     LOG(std::to_string(arr[i]));
+    // }
+    //
+    // Point *const p3 = arena.make_aligned<Point>(32, 89);
+    // LOG(p3->toString());
+    //
+    // for (size_t i = 0; i < SIZE; i++)
+    // {
+    //     LOG(std::to_string(arr[i]));
+    // }
+    //
+    // LOG(p1->toString());
 
-    // NOTE: here we don't defer, as the data is going
-    // to be freed by the arenas destructor
-
-    stl::Arena arena(4096);
-
-    // NOTE: these allocations never call destructors.
-    // either call them manually, if needed,
-    // or, preferably, make sure these types don't have
-    // non-trivial destructors
-    Point *const p1 = arena.make_aligned<Point>(69, 420);
-    Point *const p2 = arena.make_aligned<Point>(420, 69);
-
+    stl::Pool<Point> pool(20);
+    Point *const p1 = pool.alloc(23, 32);
     LOG(p1->toString());
-    LOG(p2->toString());
-
-
-    constexpr size_t SIZE = 32;
-    int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers
-
-    for (size_t i = 0; i < SIZE; i++)
-    {
-        arr[i] = i;
-    }
-
-    for (size_t i = 0; i < SIZE; i++)
-    {
-        LOG(std::to_string(arr[i]));
-    }
-
-    Point *const p3 = arena.make_aligned<Point>(32, 89);
-    LOG(p3->toString());
-
-    for (size_t i = 0; i < SIZE; i++)
-    {
-        LOG(std::to_string(arr[i]));
-    }
-
-    LOG(p1->toString());
+    pool.free(p1);
 
     // stl::Vector<Point> v;
     //
