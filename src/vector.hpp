@@ -13,7 +13,7 @@ constexpr float RESIZE_COEFF = 1.8f;
 
 
 
-namespace stl
+namespace stl::container
 {
 template<typename T>
 class Vector

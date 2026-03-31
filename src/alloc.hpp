@@ -6,24 +6,7 @@
 #include <utility>
 #include "debug.hpp"
 
-#ifndef defer
-
-template <typename T>
-struct deferrer
-{
-	T f;
-	deferrer(T f) : f(std::move(f)) { };
-	deferrer(const deferrer&) = delete;
-	~deferrer() { f(); }
-};
-
-#define TOKEN_CONCAT_NX(a, b) a ## b
-#define TOKEN_CONCAT(a, b) TOKEN_CONCAT_NX(a, b)
-#define defer deferrer TOKEN_CONCAT(__deferred, __COUNTER__) =
-
-#endif
-
-namespace stl
+namespace stl::alloc
 {
 
 class Arena
@@ -173,6 +156,12 @@ private:
 template<typename T>
 class Pool
 {
+private:
+    struct PoolNode
+    {
+        PoolNode *next;
+    };
+
 public:
     Pool(size_t size)
         : _count(size)
@@ -183,6 +172,7 @@ public:
 
     ~Pool()
     {
+        this->free_all();
         delete[] this->_pool;
     }
 
@@ -199,7 +189,7 @@ public:
         return new (node) T(std::forward<Args>(args)...);
     }
 
-    void free(T *ptr)
+    void free(T *const ptr)
     {
         if (ptr == nullptr) return;
 
@@ -208,6 +198,18 @@ public:
 
         ASSERT((start <= (std::byte*)ptr && (std::byte*)ptr < end), "Pointer does not belong to this pool");
 
+        ptr->~T(); // we go out of our way to actually call the destructor here,
+                   // although it would be preferable to skip this entirely
+
+        // This is invalid C++, by the way.
+        // C++ had a whole system for tracking which objects
+        // actually exist, as in were created through a constructor.
+        // If they weren't created through a constructor,
+        // they might as well not exist.
+        //
+        // This code still works though,
+        // and since this only holds a pointer,
+        // we don't really care what C++ thinks.
         PoolNode *node = reinterpret_cast<PoolNode*>(ptr);
         node->next = this->_head;
         this->_head = node;
@@ -224,12 +226,10 @@ public:
         }
     }
 
-
-private:
-    struct PoolNode
+    const size_t capacity() const
     {
-        PoolNode *next;
-    };
+        return this->_count;
+    }
 
 private:
     size_t _chunk_size = sizeof(T);

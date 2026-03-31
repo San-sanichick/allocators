@@ -1,7 +1,11 @@
+#include <cstdint>
 #include <cstdlib>
 #include <format>
 #include <string>
+
 #include "src/alloc.hpp"
+#include "src/utils.hpp"
+// #include "src/ref.hpp"
 // #include "src/vector.hpp"
 
 
@@ -15,7 +19,6 @@ struct Point
     Point(Point&&) = default;
     ~Point() = default;
 
-
     int len()
     {
         return x * x + y * y;
@@ -28,125 +31,93 @@ struct Point
 };
 
 
-template<typename T>
-class DynArray
-{
-public:
-    DynArray()
-        : _capacity(1)
-        , _size(0)
-        , _data(static_cast<T*>(std::malloc(sizeof(T) * _capacity)))
-    { }
-
-    void push(T&& el)
-    {
-        if (this->needsResize()) this->resize();
-
-        this->_data[this->_size] = std::move(el);
-        this->_size++;
-    }
-
-private:
-    bool needsResize()
-    {
-        return this->_size + 1 > this->_capacity;
-    }
-
-    void resize()
-    {
-        this->_capacity *= 1.8f;
-        this->_data = static_cast<T*>(std::realloc(this->_data, sizeof(T) * this->_capacity));
-    }
-
-private:
-    size_t _capacity;
-    size_t _size;
-    T* _data;
-};
-
-
-
-struct FooA
-{
-    size_t a;
-    char b;
-    char c;
-};
-
-struct FooB
-{
-    char b;
-    size_t a;
-    char c;
-};
 
 
 int main()
 {
-    // stl::Arena arena(4096);
-    //
-    // for (size_t i = 0; i < 10; i++)
-    // {
-    //     // NOTE: if use a defer macro here,
-    //     // we're good to go, as this is going to be
-    //     // freed at the end of the scope
-    //     defer ([&] { arena.free_all(); });
-    //
-    //     Point *const p1 = arena.make<Point>(i, i + 1);
-    //     Point *const p2 = arena.make<Point>(i + 2, i + 3);
-    //
-    //     LOG(p1->toString());
-    //     LOG(p2->toString());
-    //
-    //     // NOTE: or just manually free it at the end
-    //     // arena.freeAll();
-    // }
-    // //
-    // // LOG("");
-    //
-    // // NOTE: here we don't defer, as the data is going
-    // // to be freed by the arenas destructor
-    //
-    // // NOTE: these allocations never call destructors.
-    // // either call them manually, if needed,
-    // // or, preferably, make sure these types don't have
-    // // non-trivial destructors
-    // Point *const p1 = arena.make_aligned<Point>(69, 420);
-    // Point *const p2 = arena.make_aligned<Point>(420, 69);
-    //
-    // LOG(p1->toString());
-    // LOG(p2->toString());
-    //
-    //
-    // constexpr size_t SIZE = 32;
-    // int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers
-    //
-    // for (size_t i = 0; i < SIZE; i++)
-    // {
-    //     arr[i] = i;
-    // }
-    //
-    // for (size_t i = 0; i < SIZE; i++)
-    // {
-    //     LOG(std::to_string(arr[i]));
-    // }
-    //
-    // Point *const p3 = arena.make_aligned<Point>(32, 89);
-    // LOG(p3->toString());
-    //
-    // for (size_t i = 0; i < SIZE; i++)
-    // {
-    //     LOG(std::to_string(arr[i]));
-    // }
-    //
-    // LOG(p1->toString());
+    stl::alloc::Arena arena(4096); // creates an arena of 4KB
 
-    stl::Pool<Point> pool(20);
-    Point *const p1 = pool.alloc(23, 32);
+    // we can do this as many times as we want,
+    // since freeing memory in the arena is
+    // a simple assignment operation
+    for (size_t i = 0; i < 10; i++)
+    {
+        // NOTE: if we use a defer macro here,
+        // we're good to go, as this is going to be
+        // freed at the end of the scope
+        defer ([&] { arena.free_all(); });
+
+        Point *const p1 = arena.make<Point>(i, i + 1);
+        Point *const p2 = arena.make<Point>(i + 2, i + 3);
+
+        LOG(p1->toString());
+        LOG(p2->toString());
+
+        // NOTE: or just manually free it at the end
+        // arena.freeAll();
+    }
+
+    LOG("");
+
+    // NOTE: here we don't defer, as the data is going
+    // to be freed by the arenas destructor
+
+    // WARN: these allocations never call destructors.
+    // either call them manually, if needed,
+    // or, preferably, make sure these types
+    // don't need destructors at all
+    Point *const p1 = arena.make_aligned<Point>(69, 420); // Make calls the constructor
+    Point *const p2 = arena.make_aligned<Point>(420, 69);
+
     LOG(p1->toString());
-    pool.free(p1);
+    LOG(p2->toString());
 
-    // stl::Vector<Point> v;
+
+    constexpr size_t SIZE = 32;
+    int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers,
+                                                             // without calling any constructors
+
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        arr[i] = i;
+    }
+
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        LOG(std::to_string(arr[i]));
+    }
+
+    Point *const p3 = arena.make_aligned<Point>(32, 89);
+    LOG(p3->toString());
+
+    for (size_t i = 0; i < SIZE; i++)
+    {
+        LOG(std::to_string(arr[i]));
+    }
+
+    LOG(p1->toString());
+    arena.free_all();
+
+    stl::alloc::Pool<Point> pool(20); // creates a pool of 20 Point-s
+    Point *const p4 = pool.alloc(23, 32); // calls the constructor
+    LOG(p4->toString());
+
+    pool.free(p4); // NOTE: This DOES call the destructor
+                   // WARN: pool.free_all() does NOT call any destructors,
+                   // as that would be stupid, it has no way of knowing if
+                   // any given chunk is a valid object or not
+
+    // {
+    //     stl::ptr::RefCounted<Point> p1 = stl::ptr::RefCounted<Point>::make(2, 3);
+    //     LOG(std::to_string(p1.get_count()));
+    //     LOG(p1->toString());
+    //
+    //     stl::ptr::RefCounted<Point> copy = p1;
+    //     LOG(std::to_string(copy.get_count()));
+    //     LOG(copy->toString());
+    // }
+
+    // stl::container::Vector<Point> v;
     //
     // for (int i = 0; i < 10; i++)
     // {
