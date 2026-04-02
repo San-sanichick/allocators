@@ -165,7 +165,18 @@ private:
 public:
     Pool(size_t size)
         : _count(size)
+        , _arena(nullptr)
         , _pool(new std::byte[_count * _chunk_size])
+    {
+        // init the linked list
+        // world's first good performance linked list - it's all in contiguous memory
+        this->free_all();
+    }
+
+    Pool(size_t size, Arena *arena)
+        : _count(size)
+        , _arena(arena)
+        , _pool(arena->alloc_buf_aligned(_count * _chunk_size, alignof(T)))
     {
         this->free_all();
     }
@@ -173,7 +184,12 @@ public:
     ~Pool()
     {
         this->free_all();
-        delete[] this->_pool;
+
+        // if we didn't use the arena, then we just use the OS
+        if (this->_arena == nullptr)
+        {
+            delete[] this->_pool;
+        }
     }
 
 
@@ -234,6 +250,7 @@ public:
 private:
     size_t _chunk_size = sizeof(T);
     size_t _count;
+    Arena *_arena;
     std::byte *_pool;
 
     PoolNode *_head = nullptr;

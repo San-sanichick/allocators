@@ -5,7 +5,7 @@
 
 #include "src/alloc.hpp"
 #include "src/utils.hpp"
-// #include "src/ref.hpp"
+#include "src/ref.hpp"
 // #include "src/vector.hpp"
 
 
@@ -98,7 +98,7 @@ int main()
     LOG(p1->toString());
     arena.free_all();
 
-    stl::alloc::Pool<Point> pool(20); // creates a pool of 20 Point-s
+    stl::alloc::Pool<Point> pool(20, &arena); // creates a pool of 20 Point-s using the arena
     Point *const p4 = pool.alloc(23, 32); // calls the constructor
     LOG(p4->toString());
 
@@ -106,16 +106,26 @@ int main()
                    // WARN: pool.free_all() does NOT call any destructors,
                    // as that would be stupid, it has no way of knowing if
                    // any given chunk is a valid object or not
+                   // NOTE: Since we call freeAll() at the end anyway,
+                   // forgetting an individual free() is not that big of a deal here.
+                   // Might be a bigger deal elsewhere, so, uh, don't forget to call it there
 
-    // {
-    //     stl::ptr::RefCounted<Point> p1 = stl::ptr::RefCounted<Point>::make(2, 3);
-    //     LOG(std::to_string(p1.get_count()));
-    //     LOG(p1->toString());
-    //
-    //     stl::ptr::RefCounted<Point> copy = p1;
-    //     LOG(std::to_string(copy.get_count()));
-    //     LOG(copy->toString());
-    // }
+    {
+        // HACK: RAII is actually kinda shit, lmao
+        // Technically we could pass an allocator into
+        // the RefCounted::make, but that sounds like a crime,
+        // so let's not do that
+        stl::ptr::RefCounted<Point> p1 = stl::ptr::RefCounted<Point>::make(2, 3);
+        LOG(std::to_string(p1.get_count()));
+        LOG(p1->toString());
+
+        stl::ptr::RefCounted<Point> copy = p1;
+        LOG(std::to_string(copy.get_count()));
+        LOG(copy->toString());
+    }
+
+    // NOTE: Pool's destructor doesn't really do much,
+    // all of the memory gets cleaned up by the Arena's destructor
 
     // stl::container::Vector<Point> v;
     //
