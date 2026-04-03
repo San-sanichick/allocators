@@ -20,7 +20,17 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_compile_definitions(DEBUG)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g3")
+
+# target_compile_options(test PRIVATE 
+#     $<$<CONFIG:Release>:-O3 -g0>
+#     $<$<CONFIG:Debug>:-Og -g3>
+# )
+#
+# target_link_options(test PRIVATE 
+#     $<$<CONFIG:Release>:-O3 -g0>
+#     $<$<CONFIG:Debug>:-Og -g3>
+# )
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -O0 -g3")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -O3 -g0 -DNDEBUG")
 
 if(EXISTS "${CMAKE_BINARY_DIR}/compile_commands.json" AND CMAKE_BUILD_TYPE MATCHES Debug)

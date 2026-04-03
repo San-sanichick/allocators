@@ -1,9 +1,4 @@
-#include <cstdint>
-#include <cstdlib>
-#include <format>
-#include <string>
-
-#include "src/alloc.hpp"
+#include "src/alloc/alloc.hpp"
 #include "src/utils.hpp"
 #include "src/ref.hpp"
 // #include "src/vector.hpp"
@@ -11,7 +6,7 @@
 
 struct Point
 {
-    int x, y;
+    short x, y;
 
     Point() = default;
     Point(int x, int y) : x(x), y(y) {}
@@ -60,7 +55,7 @@ int main()
     LOG("");
 
     // NOTE: here we don't defer, as the data is going
-    // to be freed by the arenas destructor
+    // to be freed by the arena's destructor
 
     // WARN: these allocations never call destructors.
     // either call them manually, if needed,
@@ -96,7 +91,7 @@ int main()
     }
 
     LOG(p1->toString());
-    arena.free_all();
+    arena.free_all(); // let's just free the arena, why not
 
     stl::alloc::Pool<Point> pool(20, &arena); // creates a pool of 20 Point-s using the arena
     Point *const p4 = pool.alloc(23, 32); // calls the constructor
