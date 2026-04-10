@@ -89,7 +89,7 @@ public:
     {
         for (size_t i = 0; i < this->_count; i++)
         {
-            std::byte *ptr = &this->_pool[i + this->_chunk_size];
+            std::byte *ptr = &this->_pool[i * this->_chunk_size];
             PoolNode *node = reinterpret_cast<PoolNode*>(ptr);
             node->next = this->_head;
             this->_head = node;
