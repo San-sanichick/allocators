@@ -72,7 +72,7 @@ public:
                    // although it would be preferable to skip this entirely
 
         // This is invalid C++, by the way.
-        // C++ had a whole system for tracking which objects
+        // C++ has a whole system for tracking which objects
         // actually exist, as in were created through a constructor.
         // If they weren't created through a constructor,
         // they might as well not exist.
