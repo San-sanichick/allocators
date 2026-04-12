@@ -13,8 +13,8 @@ public:
 
     Arena(size_t bytes)
         : _size(bytes)
-          , _arena(new std::byte[_size])
-          , _top(_arena)
+        , _arena(new std::byte[_size])
+        , _top(_arena)
     { }
 
     ~Arena()
@@ -63,6 +63,8 @@ public:
     template<typename T>
     constexpr inline T *const alloc(size_t elements)
     {
+        TYPE_IS_TRIVIAL(T);
+
         const size_t size = sizeof(T) * elements;
         ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
@@ -77,6 +79,8 @@ public:
     template<typename T>
     constexpr inline T *const alloc_aligned(size_t elements)
     {
+        TYPE_IS_TRIVIAL(T);
+
         const size_t size = sizeof(T);
         const size_t alignment = alignof(T);
 
@@ -96,6 +100,8 @@ public:
     template<class T, class ...Args>
     constexpr inline T *const make(Args&&... args)
     {
+        TYPE_IS_TRIVIAL(T);
+
         const size_t size = sizeof(T);
         ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
@@ -108,6 +114,8 @@ public:
     template<class T, class ...Args>
     constexpr inline T *const make_aligned(Args&&... args)
     {
+        TYPE_IS_TRIVIAL(T);
+
         const size_t size = sizeof(T);
         const size_t alignment = alignof(T);
         uintptr_t offset = align_forward((uintptr_t)this->_top, alignment);
@@ -124,6 +132,11 @@ public:
     constexpr inline const size_t size() const
     {
         return this->_size;
+    }
+
+    constexpr inline const size_t used() const
+    {
+        return static_cast<size_t>(this->_top - this->_arena);
     }
 
 private:

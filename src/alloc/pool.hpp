@@ -10,6 +10,8 @@ namespace stl::alloc
 template<typename T>
 class Pool
 {
+TYPE_IS_TRIVIAL(T);
+
 private:
     struct PoolNode
     {
@@ -30,7 +32,7 @@ public:
     Pool(size_t size, Arena *arena)
         : _count(size)
         , _arena(arena)
-        , _pool(arena->alloc_buf_aligned(_count * _chunk_size, alignof(T)))
+        , _pool(_arena->alloc_buf_aligned(_count * _chunk_size, alignof(T)))
     {
         this->free_all();
     }
@@ -68,8 +70,8 @@ public:
 
         ASSERT((start <= (std::byte*)ptr && (std::byte*)ptr < end), "Pointer does not belong to this pool");
 
-        ptr->~T(); // we go out of our way to actually call the destructor here,
-                   // although it would be preferable to skip this entirely
+       // we could go out of our way to actually call the destructor here,
+       // but who gives a shit, we just assume that a type is trivially destructible
 
         // This is invalid C++, by the way.
         // C++ has a whole system for tracking which objects

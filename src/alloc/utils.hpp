@@ -4,7 +4,16 @@
 #include <cstdint>
 #include <cstring>
 #include <utility> // IWYU pragma: export
+#include <type_traits> // IWYU pragma: export
 #include "debug.hpp"
+
+
+
+#define TYPE_IS_TRIVIAL(x) \
+    static_assert(std::is_trivially_destructible_v<x>, "T is not trivially destructible"); \
+    static_assert(std::is_trivially_default_constructible_v<x>, "T is not trivially constructible");
+
+
 
 constexpr static inline bool is_power_of_two(uintptr_t val)
 {
