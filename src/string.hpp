@@ -26,6 +26,7 @@ private:
         , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
     {
         std::strcpy(this->_str, str);
+        this->_str[this->_size] = '\0';
     }
 
     String(const char *str, stl::alloc::Arena *arena)
