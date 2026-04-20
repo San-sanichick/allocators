@@ -1,5 +1,6 @@
 #include "linked_list.hpp"
 #include "alloc/alloc.hpp"
+#include "string.hpp"
 #include "utils.hpp"
 #include "ref.hpp"
 // #include "src/vector.hpp"
@@ -22,11 +23,33 @@ struct Point
 
 
 
-
 int main()
 {
     stl::alloc::Arena arena(4096); // creates an arena of 4KB
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
+
+    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 0 bytes
+
+    stl::String str1 = stl::String::make("hello ", &arena);
+    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 bytes
+                                                                          //
+    stl::String str2 = stl::String::make("world", &arena);
+    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 + 6 = 13 bytes
+
+    stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
+    stl::String res2 = stl::String::concat(str1, str2, &arena); // NOTE: uses a provided arena, explicit
+
+    LOG(res1);
+    LOG(res2);
+    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 37 bytes
+
+    arena.free_all();
+
+    stl::String str = stl::String::make("😳", &arena);
+    LOG(str);
+    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
+
+    return 0;
+
 
     {
         LOG("Create linked list");
