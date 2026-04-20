@@ -60,11 +60,6 @@ private:
     }
 
 public:
-    inline static String make(char* str, alloc::Arena *arena)
-    {
-        return String(arena);
-    }
-
     inline static String make(const char* str, alloc::Arena *arena)
     {
         return String(str, arena);
