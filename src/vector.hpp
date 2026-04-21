@@ -202,7 +202,17 @@ public:
         return this->_data;
     }
 
+    T* begin()
+    {
+        return this->_data;
+    }
+
     const T* end() const
+    {
+        return this->_data + this->_size;
+    }
+
+    T* end()
     {
         return this->_data + this->_size;
     }

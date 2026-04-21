@@ -3,7 +3,7 @@
 #include "string.hpp"
 #include "utils.hpp"
 #include "ref.hpp"
-// #include "src/vector.hpp"
+#include "vector.hpp"
 
 
 struct Point
@@ -13,6 +13,12 @@ struct Point
     int len()
     {
         return x * x + y * y;
+    }
+
+
+    constexpr inline bool operator<(const Point& o)
+    {
+        return this->x < o.x && this->y < o.y;
     }
 
     inline constexpr std::string toString() const
@@ -48,7 +54,7 @@ int main()
     LOG(str);
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
 
-    return 0;
+    // return 0;
 
 
     {
@@ -170,42 +176,56 @@ int main()
     // NOTE: Pool's destructor doesn't really do much,
     // all of the memory gets cleaned up by the Arena's destructor
 
-    // stl::container::Vector<Point> v;
-    //
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     v.emplaceBack(i, i + 1);
-    // }
-    //
-    // v.popBack();
-    //
-    // LOG("push result");
-    //
-    // for (const auto& el : v)
-    // {
-    //     LOG(el.toString());
-    // }
-    //
-    // LOG("pop");
-    // for (size_t i = 0; i < 5; i++)
-    // {
-    //     auto& val = v[v.size() - 1];
-    //     LOG(val.toString());
-    //
-    //     v.popBack();
-    // }
-    //
-    // v.emplaceBack(69, 420);
-    //
-    // LOG("pop result and then a single push");
-    // for (const auto& el : v)
-    // {
-    //     LOG(el.toString());
-    // }
-    //
-    //
+    stl::container::Vector<Point> v;
+
+    LOG("before sort");
+    for (int i = 10; i >= 0; i--)
+    {
+        v.emplaceBack(i, i + 1);
+    }
+
+    for (int i = 0; i < v.size(); i++)
+    {
+        LOG(v[i].toString());
+    }
+
+    std::sort(v.begin(), v.end());
+    LOG("after sort");
+
+    for (int i = 0; i < v.size(); i++)
+    {
+        LOG(v[i].toString());
+    }
+
+    v.popBack();
+
+    LOG("push result");
+
+    for (const auto& el : v)
+    {
+        LOG(el.toString());
+    }
+
+    LOG("pop");
+    for (size_t i = 0; i < 5; i++)
+    {
+        auto& val = v[v.size() - 1];
+        LOG(val.toString());
+
+        v.popBack();
+    }
+
+    v.emplaceBack(69, 420);
+
+    LOG("pop result and then a single push");
+    for (const auto& el : v)
+    {
+        LOG(el.toString());
+    }
+
+
     // LOG("copy");
-    // stl::Vector<Point> move = std::move(v);
+    // stl::container::Vector<Point> move = std::move(v);
     //
     // for (const auto& el : move)
     // {
