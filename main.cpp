@@ -1,3 +1,4 @@
+#include "alloc/stack.hpp"
 #include "linked_list.hpp"
 #include "alloc/alloc.hpp"
 #include "string.hpp"
@@ -33,6 +34,20 @@ int main()
 {
     stl::alloc::Arena arena(4096); // creates an arena of 4KB
 
+
+    {
+        defer ([&] { arena.free_all(); });
+
+        stl::alloc::Stack stack(128, &arena);
+        Point *point1 = stack.make<Point>(2, 3);
+        Point *point2 = stack.make<Point>(3, 4);
+        int *_arr = stack.alloc<int>(10);
+
+        stack.free(_arr);
+        stack.free(point2);
+        stack.free(point1);
+    }
+
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 0 bytes
 
     stl::String str1 = stl::String::make("hello ", &arena);
@@ -53,8 +68,6 @@ int main()
     stl::String str = stl::String::make("😳", &arena);
     LOG(str);
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
-
-    // return 0;
 
 
     {
