@@ -1,13 +1,28 @@
 #pragma once
 
+#include <charconv>
+#include <cstdint>
 #include <cstring>
-#include "alloc/alloc.hpp"
-#include "alloc/arena.hpp"
+#include "stl/alloc/alloc.hpp"
+#include "stl/alloc/arena.hpp"
 
-
+constexpr size_t BUF_SIZE = 58;
 
 namespace stl
 {
+template<typename T>
+inline static size_t num_size(T val)
+{
+    size_t size = 0;
+    do
+    {
+        size += 1;
+        val /= 10;
+    }
+    while (val != 0);
+
+    return size;
+}
 
 class String
 {
@@ -70,7 +85,68 @@ public:
         return String(src, arena);
     }
 
-    inline static String concat(const String &lhs, const String &rhs, alloc::Arena *arena)
+    inline static String to_string(int32_t val, alloc::Arena *arena)
+    {
+        size_t size = num_size(val);
+
+        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+
+        auto [ptr, ec] = std::to_chars(str, str + size, val);
+
+        ASSERT(ec == std::errc{}, "Integer converstion failed");
+
+        String res(arena);
+
+        res._str = str;
+        res._size = size;
+        res._capacity = size + 1;
+
+        return res;
+    }
+
+    inline static String to_string(size_t val, alloc::Arena *arena)
+    {
+        size_t size = num_size(val);
+
+        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+
+        auto [ptr, ec] = std::to_chars(str, str + size, val);
+
+        ASSERT(ec == std::errc{}, "Integer converstion failed");
+
+        String res(arena);
+
+        res._str = str;
+        res._size = size;
+        res._capacity = size + 1;
+
+        return res;
+    }
+
+    inline static String to_string(float val, alloc::Arena *arena)
+    {
+        char buf[BUF_SIZE] {};
+
+        auto [ptr, ec] = std::to_chars(buf, buf + BUF_SIZE, val);
+
+        ASSERT(ec == std::errc{}, "Integer converstion failed");
+
+        size_t size = std::strlen(buf);
+
+        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+        std::strcpy(str, buf);
+        str[size] = '\0';
+
+        String res(arena);
+
+        res._str = str;
+        res._size = size;
+        res._capacity = size + 1;
+
+        return res;
+    }
+
+    [[gnu::hot]] inline static String concat(const String &lhs, const String &rhs, alloc::Arena *arena)
     {
         size_t size = lhs._size + rhs._size + 1;
         char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));

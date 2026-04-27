@@ -1,10 +1,11 @@
-#include "alloc/stack.hpp"
-#include "linked_list.hpp"
-#include "alloc/alloc.hpp"
-#include "string.hpp"
+#include "stl/alloc/alloc.hpp"
+
+#include "stl/container/linked_list.hpp"
+#include "stl/container/vector.hpp"
+
 #include "utils.hpp"
 #include "ref.hpp"
-#include "vector.hpp"
+#include "string.hpp"
 
 
 struct Point
@@ -34,7 +35,6 @@ int main()
 {
     stl::alloc::Arena arena(4096); // creates an arena of 4KB
 
-
     {
         defer ([&] { arena.free_all(); });
 
@@ -43,32 +43,47 @@ int main()
         Point *point2 = stack.make<Point>(3, 4);
         int *_arr = stack.alloc<int>(10);
 
-        stack.free(_arr);
         stack.free(point2);
+        stack.free(_arr);
         stack.free(point1);
     }
 
+    arena.free_all();
+
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 0 bytes
 
-    stl::String str1 = stl::String::make("hello ", &arena);
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 bytes
-                                                                          //
-    stl::String str2 = stl::String::make("world", &arena);
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 + 6 = 13 bytes
+    {
+        stl::String str1 = stl::String::make("hello ", &arena);
+        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 bytes
+                                                                              //
+        stl::String str2 = stl::String::make("world", &arena);
+        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 + 6 = 13 bytes
 
-    stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
-    stl::String res2 = stl::String::concat(str1, str2, &arena); // NOTE: uses a provided arena, explicit
+        stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
+        stl::String res2 = stl::String::concat(str1, str2, &arena); // NOTE: uses a provided arena, explicit
 
-    LOG(res1);
-    LOG(res2);
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 37 bytes
+        stl::alloc::Arena scratchArena(str1.size() + str2.size() + 1);
+        stl::String res3 = stl::String::concat(str1, str2, &scratchArena); // NOTE: just for fun
+
+        LOG(res1);
+        LOG(res2);
+        LOG(res3);
+        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 37 bytes
+        LOG("Used arena memory: " + std::to_string(scratchArena.used()) + " bytes"); // 12 bytes
+    }
 
     arena.free_all();
 
+    LOG(stl::String::to_string(3.0f, &arena));
+
     stl::String str = stl::String::make("😳", &arena);
     LOG(str);
+    LOG(stl::String::to_string(arena.used(), &arena));
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
 
+    arena.free_all();
+
+    return 0;
 
     {
         LOG("Create linked list");
@@ -189,32 +204,32 @@ int main()
     // NOTE: Pool's destructor doesn't really do much,
     // all of the memory gets cleaned up by the Arena's destructor
 
-    stl::container::Vector<Point> v;
+    stl::container::Vector<Point> v(&arena);
 
-    LOG("before sort");
     for (int i = 10; i >= 0; i--)
     {
         v.emplaceBack(i, i + 1);
     }
 
-    for (int i = 0; i < v.size(); i++)
+    LOG("before sort");
+    for (const auto &el : v)
     {
-        LOG(v[i].toString());
+        LOG(el.toString());
     }
 
     std::sort(v.begin(), v.end());
-    LOG("after sort");
 
-    for (int i = 0; i < v.size(); i++)
+    LOG("after sort");
+    for (const auto &el : v)
     {
-        LOG(v[i].toString());
+        LOG(el.toString());
     }
 
     v.popBack();
 
     LOG("push result");
 
-    for (const auto& el : v)
+    for (const auto &el : v)
     {
         LOG(el.toString());
     }
@@ -231,11 +246,17 @@ int main()
     v.emplaceBack(69, 420);
 
     LOG("pop result and then a single push");
-    for (const auto& el : v)
+    for (const auto &el : v)
     {
         LOG(el.toString());
     }
 
+    v.erase(2, 4);
+
+    for (const auto &el : v)
+    {
+        LOG(el.toString());
+    }
 
     // LOG("copy");
     // stl::container::Vector<Point> move = std::move(v);
