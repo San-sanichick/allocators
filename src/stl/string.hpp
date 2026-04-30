@@ -3,8 +3,8 @@
 #include <charconv>
 #include <cstdint>
 #include <cstring>
-#include "stl/alloc/alloc.hpp"
-#include "stl/alloc/arena.hpp"
+#include "alloc/alloc.hpp"
+#include "alloc/arena.hpp"
 
 constexpr size_t BUF_SIZE = 58;
 
@@ -148,8 +148,9 @@ public:
 
     [[gnu::hot]] inline static String concat(const String &lhs, const String &rhs, alloc::Arena *arena)
     {
-        size_t size = lhs._size + rhs._size + 1;
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+        size_t size = lhs._size + rhs._size;
+        size_t capacity = size + 1;
+        char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
         std::strcpy(str, lhs._str);
         std::strcpy(str + lhs._size, rhs._str);
@@ -160,7 +161,7 @@ public:
 
         res._str = str;
         res._size = size;
-        res._capacity = size + 1;
+        res._capacity = capacity;
 
         return res;
     }
@@ -210,8 +211,14 @@ public:
         return this->_arena;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const String& p);
-    friend String operator+(const String& lhs, const String& rhs);
+    friend std::ostream &operator<<(std::ostream &os, const String &p);
+
+    friend String operator+(const String &lhs, const String &rhs);
+    friend String operator+(const String &lhs, const char *rhs);
+    friend String operator+(const char *lhs, const String &rhs);
+
+    friend bool operator==(const String &lhs, const String &rhs);
+    friend bool operator!=(const String &lhs, const String &rhs);
 
     constexpr operator std::string_view() const noexcept
     {
@@ -254,11 +261,12 @@ private:
     char *_str;
 };
 
-inline String operator+(const String& lhs, const String& rhs)
+inline String operator+(const String &lhs, const String &rhs)
 {
-    size_t size = lhs._size + rhs._size + 1;
+    size_t size = lhs._size + rhs._size;
+    size_t capacity = size + 1;
     auto *arena = lhs._arena;
-    char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+    char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
     std::strcpy(str, lhs._str);
     std::strcpy(str + lhs._size, rhs._str);
@@ -269,12 +277,73 @@ inline String operator+(const String& lhs, const String& rhs)
 
     res._str = str;
     res._size = size;
-    res._capacity = size + 1;
+    res._capacity = capacity;
 
     return res;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const String& p)
+inline String operator+(const char *lhs, const String &rhs)
+{
+    size_t lhsSize = std::strlen(lhs);
+    size_t size = lhsSize + rhs._size;
+    size_t capacity = size + 1;
+
+    auto *arena = rhs._arena;
+    char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
+
+    std::strcpy(str, lhs);
+    std::strcpy(str + lhsSize, rhs._str);
+
+    str[size] = '\0';
+
+    String res(arena);
+
+    res._str = str;
+    res._size = size;
+    res._capacity = capacity;
+
+    return res;
+}
+
+inline String operator+(const String &lhs, const char *rhs)
+{
+    size_t rhsSize = std::strlen(rhs);
+    size_t size = lhs._size + rhsSize;
+    size_t capacity = size + 1;
+
+    auto *arena = lhs._arena;
+    char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
+
+    std::strcpy(str, lhs._str);
+    std::strcpy(str + lhs._size, rhs);
+
+    str[size] = '\0';
+
+    String res(arena);
+
+    res._str = str;
+    res._size = size;
+    res._capacity = capacity;
+
+    return res;
+}
+
+inline bool operator==(const String &lhs, const String &rhs)
+{
+    if (lhs._str == rhs._str) return true;
+    if (lhs._size != rhs._size) return false;
+
+    return std::strncmp(lhs._str, rhs._str, lhs._size);
+}
+
+inline bool operator!=(const String &lhs, const String &rhs)
+{
+    if (lhs._str == rhs._str) return false;
+
+    return !std::strncmp(lhs._str, rhs._str, lhs._size);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const String &p)
 {
     for (size_t i = 0; i < p._size; i++)
     {

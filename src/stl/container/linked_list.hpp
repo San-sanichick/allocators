@@ -65,7 +65,7 @@ public:
     {
         if (node == this->_head)
         {
-            auto* head = this->_head;
+            auto *head = this->_head;
             this->_pool.free(head);
             this->_head = this->_head->next;
             return;
@@ -73,7 +73,7 @@ public:
 
         if (node == this->_tail)
         {
-            auto* tail = this->_tail;
+            auto *tail = this->_tail;
             this->_pool.free(tail);
             this->_tail = this->_tail->prev;
             return;

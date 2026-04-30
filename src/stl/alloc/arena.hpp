@@ -6,6 +6,19 @@ namespace stl::alloc
 {
 class Arena
 {
+private:
+    struct ArenaState
+    {
+        ArenaState(std::byte *ptr)
+            : ptr(ptr)
+        {}
+
+        friend class Arena; // necessary evil
+
+    private:
+        std::byte *ptr;
+    };
+
 public:
     Arena() = delete;
     Arena(const Arena&) = delete;
@@ -137,6 +150,16 @@ public:
     constexpr inline const size_t used() const
     {
         return static_cast<size_t>(this->_top - this->_arena);
+    }
+
+    [[nodiscard]] ArenaState save()
+    {
+        return { this->_top };
+    }
+
+    void restore(ArenaState &state)
+    {
+        this->_top = state.ptr;
     }
 
 private:

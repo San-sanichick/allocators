@@ -14,7 +14,7 @@ class Stack
 private:
     struct StackHeader
     {
-        size_t prevOffset;
+        size_t size;
         size_t padding;
     };
 
@@ -22,7 +22,6 @@ public:
     Stack(size_t size, alloc::Arena *arena)
         : _size(size)
         , _offset(0)
-        , _prevOffset(0)
         , _arena(arena)
         , _stack(_arena->alloc_buf(_size))
     {}
@@ -41,14 +40,13 @@ public:
 
         ASSERT(this->_offset + padding + size < this->_size, "Out of memory");
 
-        this->_prevOffset = this->_offset;
         this->_offset += padding;
 
         uintptr_t nextAddr = currAddr + static_cast<uintptr_t>(padding);
 
         StackHeader *header = reinterpret_cast<StackHeader*>(nextAddr - sizeof(StackHeader));
         header->padding = static_cast<uint8_t>(padding);
-        header->prevOffset = this->_prevOffset;
+        header->size = size;
 
         this->_offset += size;
 
@@ -71,14 +69,13 @@ public:
 
         ASSERT(this->_offset + padding + size < this->_size, "Out of memory");
 
-        this->_prevOffset = this->_offset;
         this->_offset += padding;
 
         uintptr_t nextAddr = currAddr + (uintptr_t)padding;
 
         StackHeader *header = reinterpret_cast<StackHeader*>(nextAddr - sizeof(StackHeader));
         header->padding = static_cast<uint8_t>(padding);
-        header->prevOffset = this->_prevOffset;
+        header->size = size;
 
         this->_offset += size;
 
@@ -111,10 +108,8 @@ public:
 
         size_t prevOffset = static_cast<size_t>(currAddr - static_cast<uintptr_t>(header->padding) - start);
 
-        ASSERT(prevOffset == header->prevOffset, "Out of order free");
-
+        ASSERT(this->_offset == currAddr + header->size - start, "Out of order free");
         this->_offset = prevOffset;
-        this->_prevOffset = header->prevOffset;
     }
 
     void freeAll()
@@ -157,7 +152,6 @@ private:
 private:
     size_t _size;
     size_t _offset;
-    size_t _prevOffset;
     alloc::Arena *_arena;
     std::byte *_stack;
 };

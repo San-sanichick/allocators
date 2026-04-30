@@ -3,9 +3,10 @@
 #include "stl/container/linked_list.hpp"
 #include "stl/container/vector.hpp"
 
+#include "stl/ref.hpp"
+#include "stl/string.hpp"
+
 #include "utils.hpp"
-#include "ref.hpp"
-#include "string.hpp"
 
 
 struct Point
@@ -33,7 +34,7 @@ struct Point
 
 int main()
 {
-    stl::alloc::Arena arena(4096); // creates an arena of 4KB
+    stl::alloc::Arena arena(2048); // creates an arena of 4KB
 
     {
         defer ([&] { arena.free_all(); });
@@ -41,51 +42,61 @@ int main()
         stl::alloc::Stack stack(128, &arena);
         Point *point1 = stack.make<Point>(2, 3);
         Point *point2 = stack.make<Point>(3, 4);
-        int *_arr = stack.alloc<int>(10);
+        int *_arr = stack.alloc<int>(12);
 
-        stack.free(point2);
+        for (size_t i = 0; i < 12; i++)
+        {
+            _arr[i] = i;
+        }
+
         stack.free(_arr);
+        LOG("yay");
+        stack.free(point2);
+        LOG("yay");
         stack.free(point1);
-    }
+        LOG("yay");
 
-    arena.free_all();
+        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 128 bytes
+    }
 
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 0 bytes
 
     {
         stl::String str1 = stl::String::make("hello ", &arena);
         LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 bytes
-                                                                              //
+
         stl::String str2 = stl::String::make("world", &arena);
         LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 + 6 = 13 bytes
 
         stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
-        stl::String res2 = stl::String::concat(str1, str2, &arena); // NOTE: uses a provided arena, explicit
 
         stl::alloc::Arena scratchArena(str1.size() + str2.size() + 1);
-        stl::String res3 = stl::String::concat(str1, str2, &scratchArena); // NOTE: just for fun
+        stl::String res2 = stl::String::concat(str1, str2, &scratchArena); // NOTE: just for fun
 
         LOG(res1);
         LOG(res2);
-        LOG(res3);
-        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 37 bytes
+        LOG("Equal: " + std::to_string(str1 == str2));
+        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
         LOG("Used arena memory: " + std::to_string(scratchArena.used()) + " bytes"); // 12 bytes
     }
 
     arena.free_all();
 
-    LOG(stl::String::to_string(3.0f, &arena));
+    LOG("Hello " + stl::String::to_string(3.0f, &arena) + " world");
+    LOG("Used bytes will include the call to String::to_string: " + stl::String::to_string(arena.used(), &arena) + " bytes");
+
+    arena.free_all();
 
     stl::String str = stl::String::make("😳", &arena);
     LOG(str);
-    LOG(stl::String::to_string(arena.used(), &arena));
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
 
     arena.free_all();
 
-    return 0;
-
     {
+        auto state = arena.save();
+        defer ([&] { arena.restore(state); });
+
         LOG("Create linked list");
         stl::container::LinkedList<Point> list(&arena, 5);
 
@@ -106,8 +117,9 @@ int main()
         LOG("Destroy linked list");
     }
 
-    arena.free_all();
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
+
+    return 0;
 
 
     // we can do this as many times as we want,
