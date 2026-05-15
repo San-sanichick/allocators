@@ -30,11 +30,102 @@ struct Point
     }
 };
 
+enum class TokenKind
+{
+    IDENT,
+    OP,
+};
 
+struct Token
+{
+    TokenKind kind;
+    stl::StringView value;
+};
+
+bool isDelimiter(char ch)
+{
+    return ch == ' ';
+}
+
+bool isOperator(char ch)
+{
+    return ch == '+'
+        || ch == '-'
+        || ch == '*'
+        || ch == '/';
+}
 
 int main()
 {
-    stl::alloc::Arena arena(2048); // creates an arena of 4KB
+    stl::alloc::Arena arena(4096); // general-purpose arena of 4KB
+    stl::alloc::Arena scratch(1024); // 1KB for other stuff
+
+    stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink half the arena, why not, it's free
+    stl::String::getline(std::cin, inputBuf);
+
+    stl::String expr = stl::String::copy(inputBuf, &arena); // copy from buffer string into
+                                                                         // a proper string
+    scratch.free_all(); // free up the scratch arena, we'll need it later
+
+    LOG(expr);
+
+    stl::String parseBuf = stl::String::make_buf(64, &scratch);
+
+    stl::container::Vector<Token> tokens(128, &arena);
+    for (size_t i = 0; i < expr.size(); i++)
+    {
+        char ch = expr[i];
+
+        if (isDelimiter(ch)) continue;
+
+        if (i == expr.size() - 1)
+        {
+            parseBuf += ch;
+            stl::StringView view = stl::StringView::make(parseBuf, &arena);
+            tokens.emplaceBack(TokenKind::IDENT, view);
+            parseBuf.reset();
+
+            break;
+        }
+
+        if (isOperator(ch))
+        {
+            stl::StringView view = stl::StringView::make(parseBuf, &arena);
+            tokens.emplaceBack(TokenKind::IDENT, view);
+            parseBuf.reset();
+
+            stl::String op = stl::String::make(ch, &arena);
+            tokens.emplaceBack(TokenKind::OP, stl::StringView::from_string(op));
+
+            if (i <= expr.size())
+            {
+                char next = expr[i + 1];
+                if (!isDelimiter(next))
+                {
+                    parseBuf += next;
+                }
+
+                continue;
+            }
+        }
+
+        parseBuf += ch;
+    }
+
+    scratch.free_all();
+
+    tokens.shrinkToFit();
+
+    for (const auto &token : tokens)
+    {
+        LOG(stl::String::to_string((int32_t)token.kind, &scratch) + ": " + token.value.data);
+        scratch.free_all();
+    }
+
+    // scratch.free_all();
+
+    return 0;
+
 
     {
         defer ([&] { arena.free_all(); });
@@ -56,28 +147,31 @@ int main()
         stack.free(point1);
         LOG("yay");
 
-        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 128 bytes
+        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 128 bytes
     }
 
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 0 bytes
+    LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 0 bytes
 
     {
         stl::String str1 = stl::String::make("hello ", &arena);
-        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 bytes
+        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 7 bytes
 
         stl::String str2 = stl::String::make("world", &arena);
-        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 7 + 6 = 13 bytes
+        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 7 + 6 = 13 bytes
 
         stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
 
-        stl::alloc::Arena scratchArena(str1.size() + str2.size() + 1);
-        stl::String res2 = stl::String::concat(str1, str2, &scratchArena); // NOTE: just for fun
-
         LOG(res1);
-        LOG(res2);
+
+        res1.to_upper();
+        for (auto &ch : res1)
+        {
+            std::cout << ch;
+        }
+        std::cout << std::endl;
+
         LOG("Equal: " + std::to_string(str1 == str2));
         LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
-        LOG("Used arena memory: " + std::to_string(scratchArena.used()) + " bytes"); // 12 bytes
     }
 
     arena.free_all();
@@ -89,9 +183,11 @@ int main()
 
     stl::String str = stl::String::make("😳", &arena);
     LOG(str);
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes"); // 5 bytes
+
+    LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 5 bytes
 
     arena.free_all();
+    scratch.free_all();
 
     {
         auto state = arena.save();
@@ -107,17 +203,17 @@ int main()
 
         // walk the linked list
         auto *next = list.head();
-        while (next != nullptr)
+        do
         {
             LOG(next->data.toString());
-            next = next->next;
         }
+        while ((next = next->next));
 
-        LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
+        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes");
         LOG("Destroy linked list");
     }
 
-    LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
+    LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes");
 
     return 0;
 

@@ -16,6 +16,12 @@ add_executable(test ${SOURCE_FILES})
 
 target_include_directories(test PUBLIC src)
 
+# ! precompile headers
+set(PCH "${CMAKE_SOURCE_DIR}/src/pch.hpp")
+
+target_precompile_headers(test PUBLIC ${PCH})
+# ! end precompile
+
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_compile_definitions(DEBUG)
 endif()

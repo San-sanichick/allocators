@@ -1,12 +1,6 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <utility> // IWYU pragma: export
-#include <type_traits> // IWYU pragma: export
-#include "debug.hpp"
-
+#include "pch.hpp"
 
 
 #define TYPE_IS_TRIVIAL(x) \

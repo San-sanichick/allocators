@@ -1,13 +1,7 @@
 #pragma once
 
+#include "pch.hpp"
 #include "stl/alloc/alloc.hpp"
-#include "debug.hpp"
-#include <cmath>
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <memory>
-#include <utility>
 
 
 constexpr float RESIZE_COEFF = 1.8f;
