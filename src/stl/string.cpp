@@ -349,8 +349,8 @@ String operator+(const String &lhs, const String &rhs)
     auto *arena = lhs._arena;
     char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
-    std::strcpy(str, lhs._str);
-    std::strcpy(str + lhs._size, rhs._str);
+    std::strncpy(str, lhs._str, lhs._size);
+    std::strncpy(str + lhs._size, rhs._str, rhs._size);
 
     str[size] = '\0';
 
@@ -372,8 +372,8 @@ String operator+(const char *lhs, const String &rhs)
     auto *arena = rhs._arena;
     char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
-    std::strcpy(str, lhs);
-    std::strcpy(str + lhsSize, rhs._str);
+    std::strncpy(str, lhs, lhsSize);
+    std::strncpy(str + lhsSize, rhs._str, rhs._size);
 
     str[size] = '\0';
 
@@ -395,8 +395,8 @@ String operator+(const String &lhs, const char *rhs)
     auto *arena = lhs._arena;
     char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
-    std::strcpy(str, lhs._str);
-    std::strcpy(str + lhs._size, rhs);
+    std::strncpy(str, lhs._str, lhs._size);
+    std::strncpy(str + lhs._size, rhs, rhsSize);
 
     str[size] = '\0';
 
@@ -408,6 +408,30 @@ String operator+(const String &lhs, const char *rhs)
 
     return res;
 }
+
+String operator+(const String &lhs, char rhs)
+{
+    size_t rhsSize = 1;
+    size_t size = lhs._size + rhsSize;
+    size_t capacity = size + 1;
+
+    auto *arena = lhs._arena;
+    char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
+
+    std::strncpy(str, lhs._str, lhs._size);
+    str[lhs._size] = rhs;
+
+    str[size] = '\0';
+
+    String res(arena);
+
+    res._str = str;
+    res._size = size;
+    res._capacity = capacity;
+
+    return res;
+}
+
 
 bool operator==(const String &lhs, const String &rhs)
 {

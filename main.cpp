@@ -6,7 +6,9 @@
 #include "stl/ref.hpp"
 #include "stl/string.hpp"
 
+#include "stl/union.hpp"
 #include "utils.hpp"
+#include <cstdint>
 
 
 struct Point
@@ -39,7 +41,8 @@ enum class TokenKind
 struct Token
 {
     TokenKind kind;
-    stl::StringView value;
+    stl::TaggedUnion<char, float> value;
+    // stl::StringView value;
 };
 
 bool isDelimiter(char ch)
@@ -67,8 +70,6 @@ int main()
                                                                          // a proper string
     scratch.free_all(); // free up the scratch arena, we'll need it later
 
-    LOG(expr);
-
     stl::String parseBuf = stl::String::make_buf(64, &scratch);
 
     stl::container::Vector<Token> tokens(128, &arena);
@@ -81,8 +82,8 @@ int main()
         if (i == expr.size() - 1)
         {
             parseBuf += ch;
-            stl::StringView view = stl::StringView::make(parseBuf, &arena);
-            tokens.emplaceBack(TokenKind::IDENT, view);
+            stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<float>(stl::to_float(parseBuf));
+            tokens.emplaceBack(TokenKind::IDENT, value);
             parseBuf.reset();
 
             break;
@@ -90,12 +91,16 @@ int main()
 
         if (isOperator(ch))
         {
-            stl::StringView view = stl::StringView::make(parseBuf, &arena);
-            tokens.emplaceBack(TokenKind::IDENT, view);
+            {
+            stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<float>(stl::to_float(parseBuf));
+                tokens.emplaceBack(TokenKind::IDENT, value);
+            }
             parseBuf.reset();
 
-            stl::String op = stl::String::make(ch, &arena);
-            tokens.emplaceBack(TokenKind::OP, stl::StringView::from_string(op));
+            {
+                stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<char>(ch);
+                tokens.emplaceBack(TokenKind::OP, value);
+            }
 
             if (i <= expr.size())
             {
@@ -118,7 +123,19 @@ int main()
 
     for (const auto &token : tokens)
     {
-        LOG(stl::String::to_string((int32_t)token.kind, &scratch) + ": " + token.value.data);
+        if (token.kind == TokenKind::OP)
+        {
+            LOG(stl::String::to_string((int32_t)token.kind, &scratch) + ": " + token.value.get<char>());
+        }
+        else
+        {
+            LOG(
+                stl::String::to_string((int32_t)token.kind, &scratch)
+                + ": "
+                + stl::String::to_string(token.value.get<float>(), &scratch)
+            );
+        }
+
         scratch.free_all();
     }
 
