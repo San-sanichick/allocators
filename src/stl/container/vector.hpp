@@ -4,7 +4,7 @@
 #include "stl/alloc/alloc.hpp"
 
 
-constexpr float RESIZE_COEFF = 1.8f;
+constexpr f32 RESIZE_COEFF = 1.8f;
 
 
 
@@ -209,7 +209,7 @@ public:
 private: 
     [[gnu::hot]] constexpr inline void _resize()
     {
-        float newCapacity = std::ceil((float)this->_capacity * RESIZE_COEFF);
+        f32 newCapacity = std::ceil((f32)this->_capacity * RESIZE_COEFF);
         this->_capacity = newCapacity;
 
         T* oldData = this->_data;

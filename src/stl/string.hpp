@@ -43,7 +43,7 @@ public:
 
     static String copy(const String &src, alloc::Arena *arena);
 
-    static String to_string(int32_t val, alloc::Arena *arena);
+    static String to_string(i32 val, alloc::Arena *arena);
     static String to_string(size_t val, alloc::Arena *arena);
     static String to_string(float val, alloc::Arena *arena);
 
@@ -134,10 +134,10 @@ public:
 };
 
 
-int32_t to_int(const String& str);
-int32_t to_int(const StringView& str);
-float to_float(const String& str);
-float to_float(const StringView& str);
+i32 to_int(const String& str);
+i32 to_int(const StringView& str);
+f32 to_float(const String& str);
+f32 to_float(const StringView& str);
 
 }
 

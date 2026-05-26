@@ -14,6 +14,8 @@
 #include <string> // IWYU pragma: export
 #include <memory> // IWYU pragma: export
 #include <format> // IWYU pragma: export
+#include <functional> // IWYU pragma: export
+
 #include <algorithm> // IWYU pragma: export
 #include <span> // IWYU pragma: export
 #include <vector> // IWYU pragma: export

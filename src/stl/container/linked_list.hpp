@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pch.hpp"
 #include "stl/alloc/alloc.hpp"
 
 
@@ -85,6 +86,30 @@ public:
         prev->next = next;
 
         this->_pool.free(node);
+    }
+
+    void for_each(const std::function<void(T&)> &callback)
+    {
+        if (this->_head == nullptr) return;
+
+        ListNode *next = this->_head;
+        do
+        {
+            callback(next->data);
+        }
+        while ((next = next->next));
+    }
+
+    void reverse_for_each(const std::function<void(T&)> &callback)
+    {
+        if (this->_tail == nullptr) return;
+
+        ListNode *prev = this->_tail;
+        do
+        {
+            callback(prev->data);
+        }
+        while ((prev = prev->prev));
     }
 
 private:

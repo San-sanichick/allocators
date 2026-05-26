@@ -110,7 +110,7 @@ namespace stl
         return String(src, arena);
     }
 
-    String String::to_string(int32_t val, alloc::Arena *arena)
+    String String::to_string(i32 val, alloc::Arena *arena)
     {
         size_t size = num_size(val);
 
@@ -148,7 +148,7 @@ namespace stl
         return res;
     }
 
-    String String::to_string(float val, alloc::Arena *arena)
+    String String::to_string(f32 val, alloc::Arena *arena)
     {
         char buf[BUF_SIZE] {};
 
@@ -458,9 +458,9 @@ std::ostream &operator<<(std::ostream &os, const String &p)
     return os;
 }
 
-int32_t to_int(const String& str)
+i32 to_int(const String& str)
 {
-    int32_t result {};
+    i32 result {};
 
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
     ASSERT(ec == std::errc{}, "Integer converstion failed");
@@ -468,9 +468,9 @@ int32_t to_int(const String& str)
     return result;
 }
 
-int32_t to_int(const StringView& str)
+i32 to_int(const StringView& str)
 {
-    int32_t result {};
+    i32 result {};
 
     auto [ptr, ec] = std::from_chars(str.data, str.data + str.size, result);
     ASSERT(ec == std::errc{}, "Integer converstion failed");
@@ -478,9 +478,9 @@ int32_t to_int(const StringView& str)
     return result;
 }
 
-float to_float(const String& str)
+f32 to_float(const String& str)
 {
-    float result {};
+    f32 result {};
 
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
     ASSERT(ec == std::errc{}, "Integer converstion failed");
@@ -488,9 +488,9 @@ float to_float(const String& str)
     return result;
 }
 
-float to_float(const StringView& str)
+f32 to_float(const StringView& str)
 {
-    float result {};
+    f32 result {};
 
     auto [ptr, ec] = std::from_chars(str.data, str.data + str.size, result);
     ASSERT(ec == std::errc{}, "Integer converstion failed");

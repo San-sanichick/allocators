@@ -7,15 +7,15 @@
 #include "stl/string.hpp"
 
 #include "stl/union.hpp"
+#include "types.hpp"
 #include "utils.hpp"
-#include <cstdint>
 
 
 struct Point
 {
-    int x, y;
+    i32 x, y;
 
-    int len()
+    i32 len()
     {
         return x * x + y * y;
     }
@@ -41,8 +41,7 @@ enum class TokenKind
 struct Token
 {
     TokenKind kind;
-    stl::TaggedUnion<char, float> value;
-    // stl::StringView value;
+    stl::TaggedUnion<char, f32> value;
 };
 
 bool isDelimiter(char ch)
@@ -58,16 +57,17 @@ bool isOperator(char ch)
         || ch == '/';
 }
 
-int main()
+i32 main()
 {
     stl::alloc::Arena arena(4096); // general-purpose arena of 4KB
-    stl::alloc::Arena scratch(1024); // 1KB for other stuff
+    stl::alloc::Arena scratch(4096); // 4KB for other stuff
 
-    stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink half the arena, why not, it's free
+    stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink like an 8th of the arena, why not, it's free
     stl::String::getline(std::cin, inputBuf);
 
     stl::String expr = stl::String::copy(inputBuf, &arena); // copy from buffer string into
-                                                                         // a proper string
+                                                            // a proper string
+
     scratch.free_all(); // free up the scratch arena, we'll need it later
 
     stl::String parseBuf = stl::String::make_buf(64, &scratch);
@@ -82,7 +82,7 @@ int main()
         if (i == expr.size() - 1)
         {
             parseBuf += ch;
-            stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<float>(stl::to_float(parseBuf));
+            auto value = stl::TaggedUnion<char, f32>::make<float>(stl::to_float(parseBuf));
             tokens.emplaceBack(TokenKind::IDENT, value);
             parseBuf.reset();
 
@@ -92,13 +92,13 @@ int main()
         if (isOperator(ch))
         {
             {
-            stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<float>(stl::to_float(parseBuf));
+                auto value = stl::TaggedUnion<char, f32>::make<float>(stl::to_float(parseBuf));
                 tokens.emplaceBack(TokenKind::IDENT, value);
             }
             parseBuf.reset();
 
             {
-                stl::TaggedUnion<char, float> value = stl::TaggedUnion<char, float>::make<char>(ch);
+                auto value = stl::TaggedUnion<char, f32>::make<char>(ch);
                 tokens.emplaceBack(TokenKind::OP, value);
             }
 
@@ -132,14 +132,15 @@ int main()
             LOG(
                 stl::String::to_string((int32_t)token.kind, &scratch)
                 + ": "
-                + stl::String::to_string(token.value.get<float>(), &scratch)
+                + stl::String::to_string(token.value.get<f32>(), &scratch)
             );
         }
 
-        scratch.free_all();
     }
 
-    // scratch.free_all();
+    scratch.free_all();
+
+
 
     return 0;
 
@@ -150,7 +151,7 @@ int main()
         stl::alloc::Stack stack(128, &arena);
         Point *point1 = stack.make<Point>(2, 3);
         Point *point2 = stack.make<Point>(3, 4);
-        int *_arr = stack.alloc<int>(12);
+        i32 *_arr = stack.alloc<i32>(12);
 
         for (size_t i = 0; i < 12; i++)
         {
@@ -218,13 +219,16 @@ int main()
             list.push({ i, i + 1 });
         }
 
-        // walk the linked list
-        auto *next = list.head();
-        do
+        // Iterators kinda fucking suck in C++
+        list.for_each([](Point &point)
         {
-            LOG(next->data.toString());
-        }
-        while ((next = next->next));
+            LOG(point.toString());
+        });
+
+        list.reverse_for_each([](Point &point)
+        {
+            LOG(point.toString());
+        });
 
         LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes");
         LOG("Destroy linked list");
@@ -274,7 +278,7 @@ int main()
 
 
     constexpr size_t SIZE = 32;
-    int32_t *const arr = arena.alloc_aligned<int32_t>(SIZE); // NOTE: Allocates 32 integers,
+    i32 *const arr = arena.alloc_aligned<i32>(SIZE); // NOTE: Allocates 32 integers,
                                                              // without calling any constructors
     LOG("");
     LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
@@ -331,7 +335,7 @@ int main()
 
     stl::container::Vector<Point> v(&arena);
 
-    for (int i = 10; i >= 0; i--)
+    for (i32 i = 10; i >= 0; i--)
     {
         v.emplaceBack(i, i + 1);
     }

@@ -2,6 +2,7 @@
 
 #include "debug.hpp"
 #include "pch.hpp"
+#include "stl/alloc/utils.hpp"
 
 
 namespace stl
@@ -9,6 +10,8 @@ namespace stl
 template<typename...Ts>
 struct TaggedUnion
 {
+TYPE_IS_TRIVIAL(Ts...);
+
 private:
     template<typename F, typename...Tss>
     struct union_helper
@@ -27,9 +30,6 @@ private:
     struct raw_data { std::byte data[size]; };
 
 public:
-    alignas(Ts...) raw_data<union_helper<Ts...>::size> data;
-    size_t type_id;
-
     template<typename C>
     inline static TaggedUnion make(C value)
     {
@@ -38,7 +38,10 @@ public:
         // HACK: C++ is a perfectly adequate language with no flaws at all
         new (data.data) C(value);
         return {
-            .data = data,
+            .data = data, // we allocated on the stack,
+                          // and then copied that data into the Union object,
+                          // so there shouldn't be any issues. BUT.
+                          // This will only work for TRIVIAL types
             .type_id = typeid(C).hash_code(),
         };
     }
@@ -63,5 +66,9 @@ public:
         ASSERT(this->type_id == typeid(C).hash_code(), "Invalid cast");
         return *reinterpret_cast<const C*>(this->data.data);
     }
+
+public:
+    alignas(Ts...) raw_data<union_helper<Ts...>::size> data;
+    size_t type_id;
 };
 }

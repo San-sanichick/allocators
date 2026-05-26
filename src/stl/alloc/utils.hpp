@@ -1,11 +1,18 @@
 #pragma once
 
 #include "pch.hpp"
+#include <type_traits>
 
+template<typename... Ts>
+constexpr bool check_if_trivial()
+{
+    return std::conjunction_v<
+        std::is_trivially_constructible<Ts>...,
+        std::is_trivially_destructible<Ts>...
+    >;
+}
 
-#define TYPE_IS_TRIVIAL(x) \
-    static_assert(std::is_trivially_destructible_v<x>, "T is not trivially destructible"); \
-    static_assert(std::is_trivially_default_constructible_v<x>, "T is not trivially constructible");
+#define TYPE_IS_TRIVIAL(x) static_assert(check_if_trivial<x>())
 
 
 
