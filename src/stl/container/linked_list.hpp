@@ -19,7 +19,7 @@ private:
     };
 
 public:
-    LinkedList(alloc::Arena *arena, size_t size)
+    LinkedList(size_t size, alloc::Arena *arena)
         : _pool(alloc::Pool<ListNode>(size, arena))
         , _head(nullptr)
         , _tail(nullptr)
@@ -27,7 +27,7 @@ public:
 
     ~LinkedList()
     {
-        this->_pool.free_all();
+        // this->_pool.free_all();
     }
 
     void push(T &&el)

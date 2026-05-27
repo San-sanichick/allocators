@@ -32,7 +32,7 @@ struct Point
     }
 };
 
-enum class TokenKind
+enum class TokenKind : i8
 {
     IDENT,
     OP,
@@ -212,7 +212,7 @@ i32 main()
         defer ([&] { arena.restore(state); });
 
         LOG("Create linked list");
-        stl::container::LinkedList<Point> list(&arena, 5);
+        stl::container::LinkedList<Point> list(5, &arena);
 
         for (int i = 0; i < 5; i++)
         {

@@ -70,8 +70,8 @@ public:
 
         ASSERT((start <= (std::byte*)ptr && (std::byte*)ptr < end), "Pointer does not belong to this pool");
 
-       // we could go out of our way to actually call the destructor here,
-       // but who gives a shit, we just assume that a type is trivially destructible
+        // we could go out of our way to actually call the destructor here,
+        // but who gives a shit, we just assume that a type is trivially destructible
 
         // This is invalid C++, by the way.
         // C++ has a whole system for tracking which objects

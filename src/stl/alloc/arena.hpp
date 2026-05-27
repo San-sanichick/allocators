@@ -62,7 +62,7 @@ public:
     {
         uintptr_t offset = align_forward((uintptr_t)this->_top, align);
 
-        ASSERT(offset + bytes > this->_size, "Out of memory");
+        ASSERT(offset + bytes < (uintptr_t)(this->_arena + this->_size), "Out of memory");
 
         this->_top = reinterpret_cast<std::byte*>(offset);
         std::byte *ptr = this->_top;
