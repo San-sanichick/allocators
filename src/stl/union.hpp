@@ -64,7 +64,7 @@ public:
     C& get()
     {
         ASSERT(this->type_id == typeid(C).hash_code(), "Invalid cast");
-        return *reinterpret_cast<const C*>(this->data.data);
+        return *reinterpret_cast<C*>(this->data.data);
     }
 
 public:

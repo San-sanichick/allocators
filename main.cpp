@@ -36,6 +36,7 @@ enum class TokenKind : i8
 {
     IDENT,
     OP,
+    eof,
 };
 
 struct Token
@@ -58,25 +59,10 @@ bool isOperator(char ch)
 }
 
 
-i8 bp(const Token &token)
-{
-    if (token.kind == TokenKind::IDENT) return 0;
-
-    switch (token.value.get<char>())
-    {
-        case '+': return 10; 
-        case '-': return 10;
-        case '*': return 20;
-        case '/': return 20;
-    }
-
-    return -1;
-}
-
 
 class AST
 {
-private:
+public:
     struct ASTNode
     {
         TokenKind kind;
@@ -85,12 +71,34 @@ private:
         ASTNode *right;
     };
 
+    Token eof = {
+        .kind = TokenKind::eof,
+        .value = stl::TaggedUnion<char, float>::make(0),
+    };
+
 public:
 
     AST(stl::container::Vector<Token> &tokens, stl::alloc::Arena *arena)
         : tokens(tokens)
         , pool(stl::alloc::Pool<ASTNode>(64, arena))
     {}
+
+    i8 bp(const Token &token)
+    {
+        if (token.kind == TokenKind::IDENT) return 0;
+        if (token.kind == TokenKind::eof) return 0;
+
+        switch (token.value.get<char>())
+        {
+            case '+': return 10; 
+            case '-': return 10;
+            case '*': return 20;
+            case '/': return 20;
+        }
+
+        return -1;
+    }
+
 
     ASTNode* nud(const Token &token)
     {
@@ -127,6 +135,8 @@ public:
 
     const Token &peek() const
     {
+        if (tokens.size() == 0) return this->eof;
+
         return this->tokens[tokens.size() - 1];
     }
 
@@ -142,6 +152,35 @@ public:
         return left;
     }
 
+    float walk(ASTNode *node)
+    {
+        if (node->kind == TokenKind::OP)
+        {
+            char op = node->value.get<char>();
+            switch (op)
+            {
+                case '+':
+                {
+                    return this->walk(node->left) + this->walk(node->right);
+                }
+                case '-':
+                {
+                    return this->walk(node->left) - this->walk(node->right);
+                }
+                case '*':
+                {
+                    return this->walk(node->left) * this->walk(node->right);
+                }
+                case '/':
+                {
+                    return this->walk(node->left) / this->walk(node->right);
+                }
+            }
+        }
+
+        return node->value.get<f32>();
+    }
+
 private:
     stl::container::Vector<Token> &tokens;
     stl::alloc::Pool<ASTNode> pool;
@@ -153,9 +192,11 @@ private:
 i32 main()
 {
     stl::alloc::Arena arena(4096); // general-purpose arena of 4KB
-    stl::alloc::Arena scratch(8192); // 4KB for other stuff
+    stl::alloc::Arena scratch(8192); // 8KB for other stuff
 
     stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink like an 16th of the arena, why not, it's free
+
+    LOG("Input an expression:");
     stl::String::getline(std::cin, inputBuf);
 
     stl::String expr = stl::String::copy(inputBuf, &arena); // copy from buffer string into
@@ -164,16 +205,16 @@ i32 main()
     scratch.free_all(); // free up the scratch arena, we'll need it later
 
     stl::String parseBuf = stl::String::make_buf(64, &scratch);
-
-    stl::container::Vector<Token> tokens(128, &arena);
     bool eof = false;
+    stl::container::Vector<Token> tokens(128, &arena);
     for (size_t i = 0; i < expr.size(); i++)
     {
         char ch = expr[i];
 
-        if (i == expr.size() - 1 && parseBuf.size() != 0)
+        if (i == expr.size() - 1)
         {
-            if (!eof) parseBuf += ch;
+            if (parseBuf.size() == 0) parseBuf += ch;
+            else if (!eof) parseBuf += ch;
 
             auto value = stl::TaggedUnion<char, f32>::make<float>(stl::to_float(parseBuf));
             tokens.emplaceBack(TokenKind::IDENT, value);
@@ -219,6 +260,7 @@ i32 main()
 
     tokens.shrinkToFit();
 
+    LOG("Parsed tokens:");
     for (const auto &token : tokens)
     {
         if (token.kind == TokenKind::OP)
@@ -240,6 +282,9 @@ i32 main()
 
     AST ast(tokens, &scratch);
     auto *head = ast.expr();
+
+    LOG("Calculated result");
+    std::cout << ast.walk(head) << std::endl;
 
     return 0;
 

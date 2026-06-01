@@ -44,9 +44,9 @@ namespace stl
         : _arena(arena)
         , _size(o._size)
         , _capacity(o._size + 1)
-        , _str((char*)arena->alloc_buf_aligned(o._capacity, alignof(char)))
+        , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
     {
-        std::strcpy(this->_str, o._str);
+        std::strncpy(this->_str, o._str, o._size);
         this->_str[this->_size] = '\0';
     }
 
@@ -458,7 +458,7 @@ std::ostream &operator<<(std::ostream &os, const String &p)
     return os;
 }
 
-i32 to_int(const String& str)
+i32 to_int(const String &str)
 {
     i32 result {};
 
@@ -468,7 +468,7 @@ i32 to_int(const String& str)
     return result;
 }
 
-i32 to_int(const StringView& str)
+i32 to_int(const StringView &str)
 {
     i32 result {};
 
@@ -478,7 +478,7 @@ i32 to_int(const StringView& str)
     return result;
 }
 
-f32 to_float(const String& str)
+f32 to_float(const String &str)
 {
     f32 result {};
 
@@ -488,7 +488,7 @@ f32 to_float(const String& str)
     return result;
 }
 
-f32 to_float(const StringView& str)
+f32 to_float(const StringView &str)
 {
     f32 result {};
 
