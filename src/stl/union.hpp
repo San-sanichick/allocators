@@ -7,11 +7,9 @@
 
 namespace stl
 {
-template<typename...Ts>
+template<Trivial ...Ts>
 struct TaggedUnion
 {
-TYPE_IS_TRIVIAL(Ts...);
-
 private:
     template<typename F, typename...Tss>
     struct union_helper

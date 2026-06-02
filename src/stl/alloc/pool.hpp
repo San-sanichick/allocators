@@ -7,11 +7,9 @@
 namespace stl::alloc
 {
 
-template<typename T>
+template<Trivial T>
 class Pool
 {
-TYPE_IS_TRIVIAL(T);
-
 private:
     struct PoolNode
     {

@@ -4,15 +4,13 @@
 #include <type_traits>
 
 template<typename... Ts>
-constexpr bool check_if_trivial()
-{
-    return std::conjunction_v<
-        std::is_trivially_constructible<Ts>...,
-        std::is_trivially_destructible<Ts>...
-    >;
-}
+concept Trivial = std::conjunction_v<
+    std::is_trivially_constructible<Ts>...,
+    std::is_trivially_destructible<Ts>...
+>;
 
-#define TYPE_IS_TRIVIAL(x) static_assert(check_if_trivial<x>())
+template<typename T>
+concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
 
 
 

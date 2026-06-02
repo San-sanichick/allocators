@@ -73,11 +73,9 @@ public:
         return ptr;
     }
 
-    template<typename T>
+    template<Trivial T>
     constexpr inline T *const alloc(size_t elements)
     {
-        TYPE_IS_TRIVIAL(T);
-
         const size_t size = sizeof(T) * elements;
         ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
@@ -89,11 +87,9 @@ public:
         return ptr;
     }
 
-    template<typename T>
+    template<Trivial T>
     constexpr inline T *const alloc_aligned(size_t elements)
     {
-        TYPE_IS_TRIVIAL(T);
-
         const size_t size = sizeof(T);
         const size_t alignment = alignof(T);
 
@@ -110,11 +106,9 @@ public:
         return ptr;
     }
 
-    template<class T, class ...Args>
+    template<Trivial T, class ...Args>
     constexpr inline T *const make(Args&&... args)
     {
-        TYPE_IS_TRIVIAL(T);
-
         const size_t size = sizeof(T);
         ASSERT((this->_top + size) < (std::byte*)(this->_arena + this->_size), "Out of memory");
 
@@ -124,11 +118,9 @@ public:
         return new (ptr) T(std::forward<Args>(args)...);
     }
 
-    template<class T, class ...Args>
+    template<Trivial T, class ...Args>
     constexpr inline T *const make_aligned(Args&&... args)
     {
-        TYPE_IS_TRIVIAL(T);
-
         const size_t size = sizeof(T);
         const size_t alignment = alignof(T);
         uintptr_t offset = align_forward((uintptr_t)this->_top, alignment);

@@ -1,8 +1,6 @@
 #include "string.hpp"
 #include <charconv>
 
-constexpr size_t BUF_SIZE = 58;
-
 
 namespace stl
 {
@@ -110,66 +108,66 @@ namespace stl
         return String(src, arena);
     }
 
-    String String::to_string(i32 val, alloc::Arena *arena)
-    {
-        size_t size = num_size(val);
-
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
-
-        auto [ptr, ec] = std::to_chars(str, str + size, val);
-
-        ASSERT(ec == std::errc{}, "Integer converstion failed");
-
-        String res(arena);
-
-        res._str = str;
-        res._size = size;
-        res._capacity = size + 1;
-
-        return res;
-    }
-
-    String String::to_string(size_t val, alloc::Arena *arena)
-    {
-        size_t size = num_size(val);
-
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
-
-        auto [ptr, ec] = std::to_chars(str, str + size, val);
-
-        ASSERT(ec == std::errc{}, "Integer converstion failed");
-
-        String res(arena);
-
-        res._str = str;
-        res._size = size;
-        res._capacity = size + 1;
-
-        return res;
-    }
-
-    String String::to_string(f32 val, alloc::Arena *arena)
-    {
-        char buf[BUF_SIZE] {};
-
-        auto [ptr, ec] = std::to_chars(buf, buf + BUF_SIZE, val);
-
-        ASSERT(ec == std::errc{}, "Integer converstion failed");
-
-        size_t size = std::strlen(buf);
-
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
-        std::strcpy(str, buf);
-        str[size] = '\0';
-
-        String res(arena);
-
-        res._str = str;
-        res._size = size;
-        res._capacity = size + 1;
-
-        return res;
-    }
+    // String String::to_string(i32 val, alloc::Arena *arena)
+    // {
+    //     size_t size = num_size(val);
+    //
+    //     char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+    //
+    //     auto [ptr, ec] = std::to_chars(str, str + size, val);
+    //
+    //     ASSERT(ec == std::errc{}, "Integer converstion failed");
+    //
+    //     String res(arena);
+    //
+    //     res._str = str;
+    //     res._size = size;
+    //     res._capacity = size + 1;
+    //
+    //     return res;
+    // }
+    //
+    // String String::to_string(size_t val, alloc::Arena *arena)
+    // {
+    //     size_t size = num_size(val);
+    //
+    //     char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+    //
+    //     auto [ptr, ec] = std::to_chars(str, str + size, val);
+    //
+    //     ASSERT(ec == std::errc{}, "Integer converstion failed");
+    //
+    //     String res(arena);
+    //
+    //     res._str = str;
+    //     res._size = size;
+    //     res._capacity = size + 1;
+    //
+    //     return res;
+    // }
+    //
+    // String String::to_string(f32 val, alloc::Arena *arena)
+    // {
+    //     char buf[BUF_SIZE] {};
+    //
+    //     auto [ptr, ec] = std::to_chars(buf, buf + BUF_SIZE, val);
+    //
+    //     ASSERT(ec == std::errc{}, "Integer converstion failed");
+    //
+    //     size_t size = std::strlen(buf);
+    //
+    //     char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+    //     std::strcpy(str, buf);
+    //     str[size] = '\0';
+    //
+    //     String res(arena);
+    //
+    //     res._str = str;
+    //     res._size = size;
+    //     res._capacity = size + 1;
+    //
+    //     return res;
+    // }
 
 
     String String::concat(const String &lhs, const String &rhs, alloc::Arena *arena)

@@ -10,10 +10,9 @@ constexpr f32 RESIZE_COEFF = 1.8f;
 
 namespace stl::container
 {
-template<typename T>
+template<Trivial T>
 class Vector
 {
-TYPE_IS_TRIVIAL(T);
 
 public:
     Vector(alloc::Arena *arena)

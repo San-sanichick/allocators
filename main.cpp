@@ -3,6 +3,7 @@
 #include "stl/container/linked_list.hpp"
 #include "stl/container/vector.hpp"
 
+#include "stl/print.hpp"
 #include "stl/ref.hpp"
 #include "stl/string.hpp"
 
@@ -28,7 +29,8 @@ struct Point
 
     inline constexpr std::string toString() const
     {
-        return std::format("({}, {})", x, y);
+        return stl::fmt("(%d, %d)", x, y);
+        // return std::format("({}, {})", x, y);
     }
 };
 
@@ -286,7 +288,7 @@ i32 main()
     LOG("Calculated result");
     std::cout << ast.walk(head) << std::endl;
 
-    return 0;
+    // return 0;
 
 
     {
