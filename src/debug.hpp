@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stl/print.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -24,4 +25,20 @@ inline constexpr void LOG(std::string_view str)
     }
 }
 
-#define ASSERT(x, msg) assert((x) && (msg))
+inline constexpr void LOG(const char *str, ...)
+{
+    if constexpr (BUILD == Build::Debug)
+    {
+        va_list args;
+
+        va_start(args, str);
+        std::cout << stl::vfmt(str, args) << std::endl;
+        va_end(args);
+    }
+}
+
+#if defined(NDEBUG)
+    #define ASSERT(x, msg)
+#else
+    #define ASSERT(x, msg) assert((x) && (msg))
+#endif

@@ -7,7 +7,7 @@
 
 namespace stl
 {
-inline std::string vfmt(const char * fmt, va_list args)
+inline std::string vfmt(const char *fmt, va_list args)
 {
     va_list copy;
 
@@ -29,9 +29,27 @@ inline std::string fmt(const char *fmt, ...)
     va_list args;
 
     va_start(args, fmt);
-    std::string s { vfmt(fmt, args) };
+    auto s = vfmt(fmt, args);
     va_end(args);
 
     return s;
+}
+
+inline void print(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    std::cout << vfmt(fmt, args) << std::flush;
+    va_end(args);
+}
+
+inline void println(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    std::cout << vfmt(fmt, args) << std::endl;
+    va_end(args);
 }
 }

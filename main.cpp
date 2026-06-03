@@ -30,7 +30,6 @@ struct Point
     inline constexpr std::string toString() const
     {
         return stl::fmt("(%d, %d)", x, y);
-        // return std::format("({}, {})", x, y);
     }
 };
 
@@ -198,7 +197,7 @@ i32 main()
 
     stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink like an 16th of the arena, why not, it's free
 
-    LOG("Input an expression:");
+    stl::print("Input an expression: ");
     stl::String::getline(std::cin, inputBuf);
 
     stl::String expr = stl::String::copy(inputBuf, &arena); // copy from buffer string into
@@ -262,20 +261,16 @@ i32 main()
 
     tokens.shrinkToFit();
 
-    LOG("Parsed tokens:");
+    stl::println("Parsed tokens:");
     for (const auto &token : tokens)
     {
         if (token.kind == TokenKind::OP)
         {
-            LOG(stl::String::to_string((i32)token.kind, &scratch) + ": " + token.value.get<char>());
+            stl::println("%d: %c", (i32)token.kind, token.value.get<char>());
         }
         else
         {
-            LOG(
-                stl::String::to_string((i32)token.kind, &scratch)
-                + ": "
-                + stl::String::to_string(token.value.get<f32>(), &scratch)
-            );
+            stl::println("%d: %f", (i32)token.kind, token.value.get<f32>());
         }
 
     }
@@ -285,10 +280,11 @@ i32 main()
     AST ast(tokens, &scratch);
     auto *head = ast.expr();
 
-    LOG("Calculated result");
-    std::cout << ast.walk(head) << std::endl;
+    stl::println("Calculated result");
+    float res = ast.walk(head);
+    stl::println("%f", res);
 
-    // return 0;
+    return 0;
 
 
     {
@@ -311,17 +307,17 @@ i32 main()
         stack.free(point1);
         LOG("yay");
 
-        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 128 bytes
+        LOG("Used arena memory: %d bytes", arena.used()); // 128 bytes
     }
 
-    LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 0 bytes
+    LOG("Used arena memory: %d bytes", arena.used()); // 0 bytes
 
     {
         stl::String str1 = stl::String::make("hello ", &arena);
-        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 7 bytes
+        LOG("Used arena memory: %d bytes", arena.used()); // 7 bytes
 
         stl::String str2 = stl::String::make("world", &arena);
-        LOG("Used arena memory: " + stl::String::to_string(arena.used(), &scratch) + " bytes"); // 7 + 6 = 13 bytes
+        LOG("Used arena memory: %d bytes", arena.used()); // 7 + 6 = 13 bytes
 
         stl::String res1 = str1 + str2; // NOTE: uses the same arena as str1, ambiguous
 
@@ -334,7 +330,7 @@ i32 main()
         }
         std::cout << std::endl;
 
-        LOG("Equal: " + std::to_string(str1 == str2));
+        LOG("Equal: %i", str1 == str2);
         LOG("Used arena memory: " + std::to_string(arena.used()) + " bytes");
     }
 
