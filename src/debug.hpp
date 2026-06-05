@@ -25,7 +25,27 @@ inline constexpr void LOG(std::string_view str)
     }
 }
 
+inline constexpr void ERR(std::string_view str)
+{
+    if constexpr (BUILD == Build::Debug)
+    {
+        std::cout << str << std::endl;
+    }
+}
+
 inline constexpr void LOG(const char *str, ...)
+{
+    if constexpr (BUILD == Build::Debug)
+    {
+        va_list args;
+
+        va_start(args, str);
+        std::cout << stl::vfmt(str, args) << std::endl;
+        va_end(args);
+    }
+}
+
+inline constexpr void ERR(const char *str, ...)
 {
     if constexpr (BUILD == Build::Debug)
     {

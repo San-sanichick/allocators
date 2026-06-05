@@ -4,76 +4,47 @@
 
 namespace stl
 {
-    String::String(stl::alloc::Arena *arena)
-        : _arena(arena)
-        , _size(0)
-        , _capacity(1)
-        , _str(nullptr)
-    {}
-
-    String::String(size_t capacity, stl::alloc::Arena *arena)
-        : _arena(arena)
-        , _size(0)
-        , _capacity(capacity)
-        , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
-    { }
-
-    String::String(const char *str, size_t size, stl::alloc::Arena *arena)
-        : _arena(arena)
-        , _size(size)
-        , _capacity(_size + 1)
-        , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
-    {
-        std::strcpy(this->_str, str);
-        this->_str[this->_size] = '\0';
-    }
-
-    String::String(const char *str, stl::alloc::Arena *arena)
-        : _arena(arena)
-        , _size(std::strlen(str))
-        , _capacity(_size + 1)
-        , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
-    {
-        std::strcpy(this->_str, str);
-        this->_str[this->_size] = '\0';
-    }
-
-    String::String(const String &o, stl::alloc::Arena *arena)
-        : _arena(arena)
-        , _size(o._size)
-        , _capacity(o._size + 1)
-        , _str((char*)arena->alloc_buf_aligned(_capacity, alignof(char)))
-    {
-        std::strncpy(this->_str, o._str, o._size);
-        this->_str[this->_size] = '\0';
-    }
-
-    String::String(String&& o)
-        : _arena(o._arena)
-        , _size(o._size)
-        , _capacity(o._capacity)
-        , _str(o._str)
-    {
-        o._str = nullptr;
-        o._size = 0;
-    }
-
     String String::make(const char* str, alloc::Arena *arena)
     {
-        return String(str, arena);
+        size_t size = std::strlen(str);
+
+        char *_str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+        std::strncpy(_str, str, size);
+        _str[size] = '\0';
+
+        String res;
+
+        res._arena = arena;
+        res._str = _str;
+        res._size = size;
+        res._capacity = size + 1;
+
+        return res;
     }
 
     String String::make(const char* str, size_t size, alloc::Arena *arena)
     {
-        return String(str, size, arena);
+        char *_str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+        std::strncpy(_str, str, size);
+        _str[size] = '\0';
+
+        String res;
+
+        res._arena = arena;
+        res._str = _str;
+        res._size = size;
+        res._capacity = size + 1;
+
+        return res;
     }
 
     String String::make(char ch, alloc::Arena *arena)
     {
-        String res(arena);
+        String res;
         char *str = arena->alloc<char>(2);
         str[0] = ch;
 
+        res._arena = arena;
         res._str = str;
         res._capacity = 2;
         res._size = 1;
@@ -82,9 +53,19 @@ namespace stl
         return res;
     }
 
-    String String::make_buf(size_t size, alloc::Arena *arena)
+    String String::make_buf(size_t capacity, alloc::Arena *arena)
     {
-        return String(size, arena);
+        char *_str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
+        _str[0] = '\0';
+
+        String res;
+
+        res._arena = arena;
+        res._str = _str;
+        res._size = 0;
+        res._capacity = capacity + 1;
+
+        return res;
     }
 
     void String::getline(std::istream &is, String &dest)
@@ -105,7 +86,18 @@ namespace stl
 
     String String::copy(const String &src, alloc::Arena *arena)
     {
-        return String(src, arena);
+        char *_str = (char*)arena->alloc_buf_aligned(src._size + 1, alignof(char));
+        std::strncpy(_str, src._str, src._size);
+        _str[src._size] = '\0';
+
+        String res;
+
+        res._arena = arena;
+        res._str = _str;
+        res._size = src._size;
+        res._capacity = src._size + 1;
+
+        return res;
     }
 
     String String::concat(const String &lhs, const String &rhs, alloc::Arena *arena)
@@ -119,8 +111,9 @@ namespace stl
 
         str[size] = '\0';
 
-        String res(arena);
+        String res;
 
+        res._arena = arena;
         res._str = str;
         res._size = size;
         res._capacity = capacity;
@@ -290,8 +283,9 @@ String operator+(const String &lhs, const String &rhs)
 
     str[size] = '\0';
 
-    String res(arena);
+    String res;
 
+    res._arena = arena;
     res._str = str;
     res._size = size;
     res._capacity = capacity;
@@ -313,8 +307,9 @@ String operator+(const char *lhs, const String &rhs)
 
     str[size] = '\0';
 
-    String res(arena);
+    String res;
 
+    res._arena = arena;
     res._str = str;
     res._size = size;
     res._capacity = capacity;
@@ -336,8 +331,9 @@ String operator+(const String &lhs, const char *rhs)
 
     str[size] = '\0';
 
-    String res(arena);
+    String res;
 
+    res._arena = arena;
     res._str = str;
     res._size = size;
     res._capacity = capacity;
@@ -359,8 +355,9 @@ String operator+(const String &lhs, char rhs)
 
     str[size] = '\0';
 
-    String res(arena);
+    String res;
 
+    res._arena = arena;
     res._str = str;
     res._size = size;
     res._capacity = capacity;

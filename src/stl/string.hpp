@@ -26,19 +26,11 @@ constexpr inline static size_t num_size(T val)
 
 class String
 {
-private:
-    String(stl::alloc::Arena *arena);
-    String(size_t capacity, stl::alloc::Arena *arena);
-    String(const char *str, size_t size, stl::alloc::Arena *arena);
-    String(const char *str, stl::alloc::Arena *arena);
-    String(const String &o, stl::alloc::Arena *arena);
-    String(String&& o);
-
 public:
     static String make(const char* str, alloc::Arena *arena);
     static String make(const char* str, size_t size, alloc::Arena *arena);
     static String make(char ch, alloc::Arena *arena);
-    static String make_buf(size_t size, alloc::Arena *arena);
+    static String make_buf(size_t capacity, alloc::Arena *arena);
 
     static void getline(std::istream &is, String &dest);
 
@@ -49,14 +41,15 @@ public:
     {
         size_t size = num_size(val);
 
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
+        char *str = (char*)arena->alloc_buf_aligned(size + 1, alignof(char));
 
-        auto [ptr, ec] = std::to_chars(str, str + size, val);
+        auto [ptr, ec] = std::to_chars(str, str + size + 1, val);
 
         ASSERT(ec == std::errc{}, "Integer converstion failed");
 
-        String res(arena);
+        String res;
 
+        res._arena = arena;
         res._str = str;
         res._size = size;
         res._capacity = size + 1;
@@ -80,17 +73,15 @@ public:
         std::strcpy(str, buf);
         str[size] = '\0';
 
-        String res(arena);
+        String res;
 
+        res._arena = arena;
         res._str = str;
         res._size = size;
         res._capacity = size + 1;
 
         return res;
     }
-    // static String to_string(i32 val, alloc::Arena *arena);
-    // static String to_string(size_t val, alloc::Arena *arena);
-    // static String to_string(float val, alloc::Arena *arena);
 
     static String concat(const String &lhs, const String &rhs, alloc::Arena *arena);
 

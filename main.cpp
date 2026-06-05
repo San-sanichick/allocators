@@ -37,6 +37,8 @@ enum class TokenKind : i8
 {
     IDENT,
     OP,
+    OPEN_PAREN,
+    CLOSE_PAREN,
     eof,
 };
 
@@ -51,12 +53,18 @@ bool isDelimiter(char ch)
     return ch == ' ';
 }
 
+bool isParen(char ch)
+{
+    return ch == '(' || ch == ')';
+}
+
 bool isOperator(char ch)
 {
     return ch == '+'
         || ch == '-'
         || ch == '*'
-        || ch == '/';
+        || ch == '/'
+        || ch == '^';
 }
 
 
@@ -91,17 +99,20 @@ public:
 
         switch (token.value.get<char>())
         {
-            case '+': return 10; 
+            case ')': return 0;
+            case '+': return 10;
             case '-': return 10;
             case '*': return 20;
             case '/': return 20;
+            case '^': return 40;
+            case '(': return 50;
         }
 
         return -1;
     }
 
 
-    ASTNode* nud(const Token &token)
+    ASTNode *nud(const Token &token)
     {
         auto *node = this->pool.alloc();
 
@@ -113,9 +124,18 @@ public:
         return node;
     }
 
-    ASTNode* led(ASTNode *left, const Token &nextToken)
+    ASTNode *led(ASTNode *left, const Token &nextToken)
     {
-        ASTNode* right = this->expr(bp(nextToken));
+        i8 bp = this->bp(nextToken);
+        if (
+            nextToken.kind == TokenKind::OP &&
+            nextToken.value.get<char>() == '^'
+        )
+        {
+            bp--;
+        }
+
+        ASTNode* right = this->expr(bp);
 
         auto *node = this->pool.alloc();
         node->kind = nextToken.kind;
@@ -176,6 +196,10 @@ public:
                 {
                     return this->walk(node->left) / this->walk(node->right);
                 }
+                case '^':
+                {
+                    return std::pow(this->walk(node->left), this->walk(node->right));
+                }
             }
         }
 
@@ -192,10 +216,11 @@ private:
 
 i32 main()
 {
-    stl::alloc::Arena arena(4096); // general-purpose arena of 4KB
-    stl::alloc::Arena scratch(8192); // 8KB for other stuff
+    stl::alloc::Arena arena(4096); // 4KB general-purpose arena
+    stl::alloc::Arena scratch(4096); // 4KB for other stuff
 
-    stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink like an 16th of the arena, why not, it's free
+    stl::String inputBuf = stl::String::make_buf(512, &scratch); // yoink like an 8th of the arena,
+                                                                 // why not, it's free
 
     stl::print("Input an expression: ");
     stl::String::getline(std::cin, inputBuf);
@@ -205,9 +230,10 @@ i32 main()
 
     scratch.free_all(); // free up the scratch arena, we'll need it later
 
+    stl::container::Vector<Token> tokens(128, &arena);
     stl::String parseBuf = stl::String::make_buf(64, &scratch);
     bool eof = false;
-    stl::container::Vector<Token> tokens(128, &arena);
+
     for (size_t i = 0; i < expr.size(); i++)
     {
         char ch = expr[i];
@@ -217,7 +243,7 @@ i32 main()
             if (parseBuf.size() == 0) parseBuf += ch;
             else if (!eof) parseBuf += ch;
 
-            auto value = stl::TaggedUnion<char, f32>::make<float>(stl::to_float(parseBuf));
+            auto value = stl::TaggedUnion<char, f32>::make(stl::to_float(parseBuf));
             tokens.emplaceBack(TokenKind::IDENT, value);
             parseBuf.reset();
 
@@ -230,13 +256,13 @@ i32 main()
         {
             if (parseBuf.size() != 0)
             {
-                auto value = stl::TaggedUnion<char, f32>::make<float>(stl::to_float(parseBuf));
+                auto value = stl::TaggedUnion<char, f32>::make(stl::to_float(parseBuf));
                 tokens.emplaceBack(TokenKind::IDENT, value);
             }
             parseBuf.reset();
 
             {
-                auto value = stl::TaggedUnion<char, f32>::make<char>(ch);
+                auto value = stl::TaggedUnion<char, f32>::make(ch);
                 tokens.emplaceBack(TokenKind::OP, value);
             }
 
@@ -277,7 +303,7 @@ i32 main()
 
     scratch.free_all();
 
-    AST ast(tokens, &scratch);
+    AST ast(tokens, &arena);
     auto *head = ast.expr();
 
     stl::println("Calculated result");
@@ -461,8 +487,9 @@ i32 main()
     {
         // HACK: RAII is actually kinda shit, lmao
         // Technically we could pass an allocator into
-        // the RefCounted::make, but that sounds like a crime,
-        // so let's not do that
+        // the RefCounted::make, specifically a stack allocator,
+        // or a pool allocator, but why the hell would we do that, I can
+        // just free all the memory at once later, so let's not do that
         stl::ptr::RefCounted<Point> p1 = stl::ptr::RefCounted<Point>::make(2, 3);
         LOG(std::to_string(p1.get_count()));
         LOG(p1->toString());
