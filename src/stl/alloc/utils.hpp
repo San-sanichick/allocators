@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
-#include <type_traits>
+
 
 template<typename... Ts>
 concept Trivial = std::conjunction_v<
@@ -12,6 +12,11 @@ concept Trivial = std::conjunction_v<
 template<typename T>
 concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
 
+template<typename T>
+concept Integer = std::is_integral_v<T>;
+
+template<typename T>
+concept Float = std::is_floating_point_v<T>;
 
 
 constexpr static inline bool is_power_of_two(uintptr_t val)
@@ -34,5 +39,3 @@ constexpr static inline uintptr_t align_forward(uintptr_t ptr, size_t align)
 
     return p;
 }
-
-

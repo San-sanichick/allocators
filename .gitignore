@@ -1,5 +1,4 @@
 .cache
 build
 compile_commands.json
-vecrender
 .zed/debug.json

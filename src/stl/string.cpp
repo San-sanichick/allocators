@@ -106,8 +106,8 @@ namespace stl
         size_t capacity = size + 1;
         char *str = (char*)arena->alloc_buf_aligned(capacity, alignof(char));
 
-        std::strcpy(str, lhs._str);
-        std::strcpy(str + lhs._size, rhs._str);
+        std::strncpy(str, lhs._str, lhs._size);
+        std::strncpy(str + lhs._size, rhs._str, rhs._size);
 
         str[size] = '\0';
 

@@ -4,13 +4,13 @@
 
 #include "alloc/alloc.hpp"
 #include "alloc/arena.hpp"
-#include <type_traits>
+#include "stl/alloc/utils.hpp"
 
 constexpr size_t BUF_SIZE = 58;
 
 namespace stl
 {
-template<typename T> requires std::is_integral_v<T>
+template<Integer T>
 constexpr inline static size_t num_size(T val)
 {
     size_t size = 0;
@@ -36,7 +36,7 @@ public:
 
     static String copy(const String &src, alloc::Arena *arena);
 
-    template<typename T> requires std::is_integral_v<T>
+    template<Integer T>
     static String to_string(T val, alloc::Arena *arena)
     {
         size_t size = num_size(val);
@@ -58,7 +58,7 @@ public:
     }
 
 
-    template<typename T> requires std::is_floating_point_v<T>
+    template<Float T>
     static String to_string(T val, alloc::Arena *arena)
     {
         char buf[BUF_SIZE] {};
@@ -69,8 +69,8 @@ public:
 
         size_t size = std::strlen(buf);
 
-        char *str = (char*)arena->alloc_buf_aligned(size, alignof(char));
-        std::strcpy(str, buf);
+        char *str = (char*)arena->alloc_buf_aligned(size + 1, alignof(char));
+        std::strncpy(str, buf, size);
         str[size] = '\0';
 
         String res;
